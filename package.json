@@ -1,0 +1,18 @@
+{
+  "name": "@rewardz/sdk-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "generate-idl": "cd ../mvp-smart-contracts && cargo check --features idl -p rewardz-mvp-api",
+    "generate-clients": "tsx scripts/generate-clients.ts",
+    "codama": "pnpm generate-idl && pnpm generate-clients"
+  },
+  "devDependencies": {
+    "@codama/nodes-from-anchor": "^1.3.8",
+    "@codama/renderers-js": "^1.5.5",
+    "codama": "^1.5.0",
+    "tsx": "^4.20.5"
+  }
+}

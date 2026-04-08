@@ -1,0 +1,71 @@
+// ---------------------------------------------------------------------------
+// @rewardz/types — On-chain Error Codes
+//
+// All 29 error variants from the rewardz-mvp IDL.
+// ---------------------------------------------------------------------------
+
+export enum RewardzError {
+  AlreadyInitialized = 0,
+  NotInitialized = 1,
+  InvalidDiscriminator = 2,
+  Unauthorized = 3,
+  InsufficientStake = 4,
+  BelowMinimumStake = 5,
+  StakeLockedByRental = 6,
+  ArithmeticOverflow = 7,
+  ArithmeticUnderflow = 8,
+  InvalidMerkleProof = 9,
+  ProofTooLong = 10,
+  ReceiptExpired = 11,
+  InvalidReceiptSigner = 12,
+  InsufficientPoints = 13,
+  AlreadyClaimed = 14,
+  MintNotSuccessful = 15,
+  RentalNotActive = 16,
+  InvalidRentalStatus = 17,
+  InvalidPda = 18,
+  InvalidTokenProgram = 19,
+  InvalidSystemProgram = 20,
+  InvalidAccountOwner = 21,
+  AccountDataTooSmall = 22,
+  ProtocolNotActive = 23,
+  InvalidDataLength = 24,
+  ZeroAmount = 25,
+  InsufficientEscrow = 26,
+  PointsAlreadySynced = 27,
+  StakeAuthorityMismatch = 28,
+}
+
+/** Human-readable error messages keyed by error code */
+export const REWARDZ_ERROR_MESSAGES: Record<RewardzError, string> = {
+  [RewardzError.AlreadyInitialized]: "Account already initialized",
+  [RewardzError.NotInitialized]: "Account not initialized",
+  [RewardzError.InvalidDiscriminator]: "Invalid discriminator",
+  [RewardzError.Unauthorized]: "Unauthorized signer",
+  [RewardzError.InsufficientStake]: "Insufficient stake amount",
+  [RewardzError.BelowMinimumStake]: "Below minimum stake requirement",
+  [RewardzError.StakeLockedByRental]: "Cannot unstake rented portion",
+  [RewardzError.ArithmeticOverflow]: "Arithmetic overflow",
+  [RewardzError.ArithmeticUnderflow]: "Arithmetic underflow",
+  [RewardzError.InvalidMerkleProof]: "Invalid Merkle proof",
+  [RewardzError.ProofTooLong]: "Merkle proof too long",
+  [RewardzError.ReceiptExpired]: "Receipt expired",
+  [RewardzError.InvalidReceiptSigner]: "Invalid receipt signer",
+  [RewardzError.InsufficientPoints]: "Insufficient points for burn",
+  [RewardzError.AlreadyClaimed]: "Mint attempt already claimed",
+  [RewardzError.MintNotSuccessful]: "Mint attempt was not successful",
+  [RewardzError.RentalNotActive]: "Rental not active",
+  [RewardzError.InvalidRentalStatus]: "Invalid rental status",
+  [RewardzError.InvalidPda]: "Invalid PDA seeds",
+  [RewardzError.InvalidTokenProgram]: "Invalid token program",
+  [RewardzError.InvalidSystemProgram]: "Invalid system program",
+  [RewardzError.InvalidAccountOwner]: "Invalid account owner",
+  [RewardzError.AccountDataTooSmall]: "Account data too small",
+  [RewardzError.ProtocolNotActive]: "Protocol is not active",
+  [RewardzError.InvalidDataLength]: "Invalid instruction data length",
+  [RewardzError.ZeroAmount]: "Amount must be greater than zero",
+  [RewardzError.InsufficientEscrow]: "Insufficient rental escrow balance",
+  [RewardzError.PointsAlreadySynced]:
+    "Points amount already synced (cannot go backwards)",
+  [RewardzError.StakeAuthorityMismatch]: "Stake authority mismatch with rental",
+};

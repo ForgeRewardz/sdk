@@ -1,0 +1,411 @@
+// ---------------------------------------------------------------------------
+// @rewardz/types — API Models
+// ---------------------------------------------------------------------------
+
+import type {
+  IntentAction,
+  CompletionStatus,
+  PointEventType,
+  ProtocolStatus,
+  CampaignStatus,
+  QuestType,
+  SubscriptionFrequency,
+  DelegationTriggerType,
+  TweetSubmissionStatus,
+  LeaderboardSnapshotType,
+  MarketingSpendType,
+} from "./enums.js";
+
+// ---------------------------------------------------------------------------
+// Ported from api/src/types/index.ts
+// ---------------------------------------------------------------------------
+
+/** Base user record */
+export interface User {
+  wallet_address: string;
+  total_points: bigint;
+  synced_points: bigint;
+  updated_at: Date;
+}
+
+/** User balance record */
+export interface UserBalance {
+  wallet_address: string;
+  total_earned: bigint;
+  total_pending: bigint;
+  total_spent: bigint;
+  total_reserved: bigint;
+  usable_balance: bigint;
+  updated_at: Date;
+}
+
+/** Protocol record */
+export interface Protocol {
+  id: string;
+  admin_wallet: string;
+  name: string;
+  description: string | null;
+  blink_base_url: string | null;
+  supported_actions: string[];
+  trust_score: number;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/** Campaign record */
+export interface Campaign {
+  campaign_id: string;
+  protocol_id: string;
+  name: string;
+  description: string | null;
+  action_type: string;
+  points_per_completion: number;
+  max_per_user_per_day: number;
+  budget_total: bigint | null;
+  budget_spent: bigint;
+  status: string;
+  start_at: Date;
+  end_at: Date | null;
+  created_at: Date;
+}
+
+/** Point event record */
+export interface PointEvent {
+  id: string;
+  user_wallet: string;
+  protocol_id: string | null;
+  type: PointEventType;
+  amount: bigint;
+  completion_id: string | null;
+  source_signature: string | null;
+  source_reference: string | null;
+  reason: string | null;
+  created_at: Date;
+}
+
+// ---------------------------------------------------------------------------
+// From sdk-design.md
+// ---------------------------------------------------------------------------
+
+/** Intent — a user's desired action */
+export interface Intent {
+  intentId: string;
+  wallet: string;
+  actionType: IntentAction;
+  params: Record<string, string>;
+  resolverType: "ai" | "rules" | "hybrid";
+  resolverConfidence?: number;
+  source: "manual" | "subscription" | "composable" | "quest";
+  subscriptionId?: string;
+  questId?: string;
+}
+
+/** Protocol manifest describing supported intents */
+export interface ProtocolManifest {
+  protocolId: string;
+  name: string;
+  domain: string;
+  actionsJsonUrl: string;
+  intents: IntentSupport[];
+  status: "active" | "paused" | "onboarding";
+}
+
+/** How a protocol supports a specific intent type */
+export interface IntentSupport {
+  intentType: IntentAction;
+  actionUrlTemplate: string;
+  verificationAdapter: string;
+  rewardPolicyId: string;
+}
+
+/** Reward policy governing point issuance */
+export interface RewardPolicy {
+  policyId: string;
+  protocolId: string;
+  intentType: IntentAction;
+  basePoints: number;
+  multiplierRules: MultiplierRule[];
+  eligibility: EligibilityRules;
+  budget: { maxAwards: number; awardedCount: number };
+  period: { startAt: Date; endAt: Date };
+}
+
+/** A multiplier rule for reward computation */
+export interface MultiplierRule {
+  type: "streak" | "tier" | "volume" | "referral";
+  thresholds: { min: number; multiplier: number }[];
+}
+
+/** Eligibility constraints for reward policies */
+export interface EligibilityRules {
+  minAmountUsd?: number;
+  maxAmountUsd?: number;
+  frequencyLimit?: { count: number; windowSeconds: number };
+  newUserOnly?: boolean;
+}
+
+/** Subscription — recurring intent execution */
+export interface Subscription {
+  subscriptionId: string;
+  wallet: string;
+  intent: Omit<Intent, "intentId" | "source" | "subscriptionId">;
+  schedule: CronSchedule;
+  status: "active" | "paused" | "cancelled" | "expired";
+  streak: {
+    current: number;
+    longest: number;
+    lastExecutedAt: Date;
+  };
+  createdAt: Date;
+}
+
+/** Cron schedule for subscriptions */
+export interface CronSchedule {
+  frequency: "daily" | "weekly" | "biweekly" | "monthly";
+  preferredHour?: number;
+  preferredDay?: number;
+}
+
+/** Quest — a time-bound challenge or composable multi-step chain */
+export interface Quest {
+  questId: string;
+  name: string;
+  description: string;
+  questType:
+    | "hold"
+    | "engagement"
+    | "newcomer"
+    | "composable"
+    | "streak"
+    | "subscription";
+  conditions: QuestCondition[];
+  rewardPoints: number;
+  bonusMultiplier?: number;
+  startAt: Date;
+  endAt: Date;
+  maxParticipants?: number;
+  status: "active" | "completed" | "expired";
+  steps?: QuestStep[];
+  bonusPoints?: number;
+  compositionMode?: "open" | "invite_only" | "closed";
+  createdBy?: string;
+  collaborators?: QuestCollaborator[];
+}
+
+/** A single step in a composable quest */
+export interface QuestStep {
+  stepId: string;
+  questId: string;
+  stepIndex: number;
+  intentType: IntentAction;
+  protocolId: string;
+  params: Record<string, string>;
+  rewardPolicyId: string;
+  points: number;
+  dependsOn: number | null;
+}
+
+/** A collaborating protocol in a composable quest */
+export interface QuestCollaborator {
+  collaboratorId: string;
+  questId: string;
+  protocolId: string;
+  stepIndex: number;
+  role: "creator" | "step_provider" | "sponsor";
+  rewardPolicyId: string;
+  points: number;
+  status: "invited" | "active" | "declined" | "removed";
+  invitedBy: string;
+  joinedAt?: Date;
+}
+
+/** A condition for quest eligibility or completion */
+export interface QuestCondition {
+  type:
+    | "unique_protocol_count"
+    | "min_balance_hold"
+    | "composable_completion"
+    | "subscription_streak"
+    | "action_count";
+  target: number;
+  windowDays?: number;
+  protocolId?: string;
+  questId?: string;
+}
+
+/** Progress tracking for a user's quest participation */
+export interface QuestProgress {
+  questProgressId: string;
+  questId: string;
+  wallet: string;
+  conditionsMet: {
+    type: string;
+    current: number;
+    target: number;
+  }[];
+  stepsCompleted?: number[];
+  stepsPending?: number[];
+  bonusAwarded?: boolean;
+  completed: boolean;
+  completedAt?: Date;
+  startedAt: Date;
+}
+
+/** Completion record linking intent execution to reward */
+export interface Completion {
+  completionId: string;
+  offerId: string;
+  intentId: string;
+  wallet: string;
+  protocolId: string;
+  policyId: string;
+  expectedReference: string;
+  status: CompletionStatus;
+  award?: PointEvent;
+  createdAt: Date;
+}
+
+/** A ranked offer returned by intent resolution */
+export interface IntentOffer {
+  offerId: string;
+  protocolId: string;
+  protocolName: string;
+  actionUrl: string;
+  intentType: IntentAction;
+  estimatedReward: number;
+  score: number;
+  rewardPolicyId: string;
+}
+
+// ---------------------------------------------------------------------------
+// New types (not yet in API)
+// ---------------------------------------------------------------------------
+
+/** Season — a time-bounded leaderboard period */
+export interface Season {
+  seasonId: string;
+  name: string;
+  startAt: Date;
+  endAt: Date;
+  status: "upcoming" | "active" | "completed";
+}
+
+/** User rank within a season */
+export interface UserRank {
+  wallet: string;
+  rank: number;
+  totalPoints: bigint;
+  seasonId: string;
+}
+
+/** Protocol rank within a season */
+export interface ProtocolRank {
+  protocolId: string;
+  rank: number;
+  totalPointsIssued: bigint;
+  uniqueUsers: number;
+  seasonId: string;
+}
+
+/** Tweet submission record */
+export interface TweetSubmission {
+  submissionId: string;
+  tweetUrl: string;
+  wallet: string;
+  protocolId: string | null;
+  status: TweetSubmissionStatus;
+  points: number | null;
+  createdAt: Date;
+}
+
+/** Rule for verifying tweet eligibility */
+export interface TweetVerificationRule {
+  ruleId: string;
+  protocolId: string;
+  hashtags: string[];
+  mentions: string[];
+  cashtags: string[];
+  basePoints: number;
+  bonusPerLike: number;
+  allRequired: boolean;
+}
+
+/** Result of a points award operation */
+export interface AwardResult {
+  eventId: string;
+  wallet: string;
+  amount: bigint;
+  reason: string;
+  createdAt: Date;
+}
+
+/** Zealy integration config */
+export interface ZealyIntegration {
+  integrationId: string;
+  protocolId: string;
+  spaceId: string;
+  webhookUrl: string;
+  questMappings: Record<string, string>;
+  status: "active" | "paused" | "disconnected";
+}
+
+/** Audit log entry for delegation actions */
+export interface AuditLogEntry {
+  entryId: string;
+  delegationId: string;
+  action: string;
+  timestamp: Date;
+  details: Record<string, unknown>;
+}
+
+/** Pagination options for list queries */
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+/** Paginated response wrapper */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Agent delegation types
+// ---------------------------------------------------------------------------
+
+/** Agent delegation — user grants an agent permission to act */
+export interface AgentDelegation {
+  delegationId: string;
+  wallet: string;
+  agentId: string;
+  permissions: Record<string, boolean>;
+  triggers: AgentTrigger[];
+  status: "active" | "paused" | "revoked";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** A trigger condition for an agent delegation */
+export interface AgentTrigger {
+  triggerId: string;
+  type: DelegationTriggerType;
+  config: Record<string, unknown>;
+  enabled: boolean;
+}
+
+/** Configuration for setting up an agent delegation */
+export interface DelegationConfig {
+  agentId: string;
+  permissions: Record<string, boolean>;
+  maxSpendPerAction: number;
+  dailyLimit: number;
+  allowedActions: IntentAction[];
+  expiresAt: Date;
+}
