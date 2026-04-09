@@ -35,6 +35,9 @@ export interface InitCompletionResponse {
   completion_id: string;
   expected_reference: string;
   expires_at: string;
+  action_url?: string;
+  action_type?: string;
+  estimated_amount?: string;
 }
 
 /** Response from POST /completions/callback */

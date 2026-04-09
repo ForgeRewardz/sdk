@@ -11,6 +11,7 @@ export default defineConfig({
     "src/integrations/index.ts",
     "src/telegram/index.ts",
     "src/agent/index.ts",
+    "src/generated/index.ts",
   ],
   format: ["esm", "cjs"],
   dts: true,

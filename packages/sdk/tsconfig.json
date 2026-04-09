@@ -2,10 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "paths": {
-      "@rewardz/types": ["../types/src/index.ts"]
-    }
+    "rootDir": "src"
   },
   "include": ["src"]
 }

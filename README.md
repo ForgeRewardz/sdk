@@ -13,7 +13,7 @@ REWARDZ is a Solana-based DeFi rewards platform. Users earn points by doing DeFi
 ## Installation
 
 ```bash
-pnpm add @rewardz/sdk @solana/web3.js
+pnpm add @rewardz/sdk @solana/kit
 pnpm add @rewardz/types
 ```
 
@@ -89,7 +89,7 @@ import {
   PublicKey,
   Transaction,
   sendAndConfirmTransaction,
-} from "@solana/web3.js";
+} from "@solana/kit";
 
 const ix = createProtocolStakeInstruction(
   {
@@ -227,7 +227,7 @@ const { transaction, message } = await client.buildBlinkTransaction(
 ### 7. Sign and submit the transaction
 
 ```typescript
-import { Transaction, Connection } from "@solana/web3.js";
+import { Transaction, Connection } from "@solana/kit";
 
 const connection = new Connection(rpcUrl);
 const tx = Transaction.from(Buffer.from(transaction, "base64"));
@@ -625,7 +625,7 @@ The REWARDZ smart contract program ID is `mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcE
 ### PDA Derivation
 
 ```typescript
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/kit";
 
 const REWARDZ_PROGRAM_ID = new PublicKey(
   "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh",
