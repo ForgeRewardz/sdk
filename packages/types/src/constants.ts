@@ -88,6 +88,56 @@ export const API_LEADERBOARD_PROTOCOLS_BY_ID =
 export const API_LEADERBOARD_USERS = "/v1/leaderboard/users" as const;
 export const API_LEADERBOARD_ME = "/v1/leaderboard/me" as const;
 
+// Auth (Phase 5 — protocol console wallet auth)
+export const API_AUTH_CHALLENGE = "/v1/auth/challenge" as const;
+export const API_AUTH_VERIFY = "/v1/auth/verify" as const;
+export const API_AUTH_LOGOUT = "/v1/auth/logout" as const;
+
+// Admin — leaderboards
+export const API_ADMIN_LEADERBOARD_SNAPSHOT =
+  "/v1/admin/leaderboards/snapshot" as const;
+export const API_ADMIN_LEADERBOARD_SNAPSHOT_BY_SEASON =
+  "/v1/admin/leaderboards/snapshot/:seasonId" as const;
+
+// Admin — protocol lifecycle controls
+export const API_ADMIN_PROTOCOL_PAUSE =
+  "/v1/admin/protocols/:id/pause" as const;
+export const API_ADMIN_PROTOCOL_RESUME =
+  "/v1/admin/protocols/:id/resume" as const;
+export const API_ADMIN_PROTOCOL_SLASH =
+  "/v1/admin/protocols/:id/slash" as const;
+export const API_ADMIN_PROTOCOL_COOLDOWN =
+  "/v1/admin/protocols/:id/cooldown" as const;
+
+// Admin — campaign lifecycle controls
+export const API_ADMIN_CAMPAIGN_PAUSE =
+  "/v1/admin/campaigns/:id/pause" as const;
+export const API_ADMIN_CAMPAIGN_RESUME =
+  "/v1/admin/campaigns/:id/resume" as const;
+
+// Protocol — campaigns CRUD
+export const API_PROTOCOL_CAMPAIGNS = "/v1/protocols/:id/campaigns" as const;
+export const API_PROTOCOL_CAMPAIGN_BY_ID =
+  "/v1/protocols/:id/campaigns/:campaignId" as const;
+export const API_PROTOCOL_CAMPAIGN_STATS =
+  "/v1/protocols/:id/campaigns/:campaignId/stats" as const;
+export const API_PROTOCOL_OVERVIEW = "/v1/protocols/:id/overview" as const;
+
+// Protocol — IDL upload + program profiles + blinks publish
+export const API_PROTOCOL_IDLS = "/v1/protocols/:id/idls" as const;
+export const API_PROTOCOL_IDL_INSTRUCTIONS =
+  "/v1/protocols/:id/idls/:idlId/instructions" as const;
+export const API_PROTOCOL_PROGRAM_PROFILES =
+  "/v1/protocols/:id/program-profiles" as const;
+export const API_PROTOCOL_BLINKS = "/v1/protocols/:id/blinks" as const;
+
+// Blinks runtime (public, consumed by dial.to and other blink clients)
+export const API_BLINKS_RUNTIME =
+  "/v1/blinks/:protocolId/:instructionSlug/:fixedAccountsHash?" as const;
+
+// Root actions sitemap (public, served at site root per Solana Actions spec)
+export const API_ACTIONS_JSON = "/actions.json" as const;
+
 // ── PDA Seed Constants ─────────────────────────────────────────────────────
 // Match mvp-smart-contracts/api/src/consts.rs exactly.
 
