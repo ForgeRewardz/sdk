@@ -282,29 +282,109 @@ export interface IntentOffer {
 // New types (not yet in API)
 // ---------------------------------------------------------------------------
 
-/** Season — a time-bounded leaderboard period */
+/**
+ * Season — a time-bounded leaderboard period.
+ *
+ * Timestamps are serialised as ISO-8601 strings over the wire (JSON can't
+ * carry native `Date`). Callers may coerce to `Date` in-memory if they need
+ * arithmetic or formatting.
+ */
 export interface Season {
   seasonId: string;
   name: string;
-  startAt: Date;
-  endAt: Date;
+  description: string | null;
+  /** ISO-8601 timestamp string (wire format). */
+  startAt: string;
+  /** ISO-8601 timestamp string, or `null` for an open-ended season. */
+  endAt: string | null;
   status: "upcoming" | "active" | "completed";
+  /** True once the admin snapshot has been taken for this season. */
+  snapshotTaken: boolean;
 }
 
-/** User rank within a season */
+/**
+ * Per-channel points breakdown — shared between {@link UserRank} and
+ * {@link ProtocolRank}.
+ *
+ * All values are **`string`** over the wire because JSON cannot serialise
+ * `bigint`. Consumers that need arithmetic should coerce with `BigInt(value)`
+ * in-memory.
+ *
+ * NOTE: The underlying point-event `channel` enum has five members —
+ * `'api' | 'webhook' | 'blink' | 'completion' | 'tweet'` — but the
+ * user-facing leaderboard breakdown only surfaces four. `completion` is
+ * rolled up into `blink` at the surface because completion events are the
+ * on-chain acknowledgement of a preceding blink interaction, so splitting
+ * them would double-count. If you need the raw five-way split, query the
+ * `point_events` table directly.
+ */
+export interface PointsBreakdown {
+  /** Points earned via tweet submissions (bigint as string). */
+  tweet: string;
+  /** Points awarded via direct API award/batch calls (bigint as string). */
+  api: string;
+  /** Points awarded via webhook integrations, e.g. Zealy (bigint as string). */
+  webhook: string;
+  /** Points awarded via blink interactions — includes rolled-up `completion` channel (bigint as string). */
+  blink: string;
+}
+
+/**
+ * User rank within a season (TODO-0016 §16C shape).
+ *
+ * `totalPoints` is a **`string`** on the wire because JSON cannot serialise
+ * `bigint`. Coerce with `BigInt(entry.totalPoints)` if arithmetic is needed.
+ * See Klaus R7.
+ */
 export interface UserRank {
   wallet: string;
   rank: number;
-  totalPoints: bigint;
+  /** Total points across all channels (bigint as string). */
+  totalPoints: string;
+  breakdown: PointsBreakdown;
   seasonId: string;
 }
 
-/** Protocol rank within a season */
+/**
+ * Protocol rank within a season (TODO-0016 §16C shape).
+ *
+ * `totalPointsIssued` is a **`string`** on the wire (same bigint→string
+ * rationale as {@link UserRank.totalPoints}).
+ */
 export interface ProtocolRank {
   protocolId: string;
+  protocolName: string;
+  protocolLogo: string | null;
   rank: number;
-  totalPointsIssued: bigint;
-  uniqueUsers: number;
+  /** Total points issued by this protocol across all channels (bigint as string). */
+  totalPointsIssued: string;
+  breakdown: PointsBreakdown;
+  uniqueUsersRewarded: number;
+  seasonId: string;
+}
+
+/**
+ * Paginated user rankings response (TODO-0016 spec).
+ *
+ * `entries + total + seasonId` — no page/limit in the body; pagination is
+ * controlled by request query params and the server returns the requested
+ * window in `entries`, with `total` as the full count for the season.
+ */
+export interface UserRankingsResponse {
+  entries: UserRank[];
+  total: number;
+  seasonId: string;
+}
+
+/**
+ * Paginated protocol rankings response (TODO-0016 spec).
+ *
+ * Same shape contract as {@link UserRankingsResponse} — see that type for
+ * pagination semantics.
+ */
+export interface ProtocolRankingsResponse {
+  entries: ProtocolRank[];
+  total: number;
   seasonId: string;
 }
 
