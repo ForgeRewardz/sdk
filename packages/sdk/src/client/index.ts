@@ -19,6 +19,7 @@
 import { HttpClient } from "../core/http.js";
 import { WalletAuth, type WalletAdapter } from "../core/auth.js";
 import { RewardzApiError } from "../core/errors.js";
+import { TweetClient } from "../integrations/tweets.js";
 import {
   API_INTENTS_RESOLVE,
   API_COMPLETIONS_INIT,
@@ -110,6 +111,12 @@ export class RewardzClient {
   protected readonly auth: WalletAuth;
   protected readonly rpcUrl: string;
 
+  /**
+   * Tweet integration — user-facing TweetClient bound to this client's
+   * HttpClient (with wallet auth headers attached before each call).
+   */
+  public readonly tweets: TweetClient;
+
   constructor(config: RewardzClientConfig) {
     this.auth = new WalletAuth(config.wallet);
     this.rpcUrl = config.rpcUrl;
@@ -117,6 +124,7 @@ export class RewardzClient {
       baseUrl: config.apiBaseUrl,
       timeoutMs: config.timeoutMs,
     });
+    this.tweets = new TweetClient(this.http);
   }
 
   /* ── Auth ─────────────────────────────────────────────────────────────── */
