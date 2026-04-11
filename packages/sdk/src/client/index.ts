@@ -20,6 +20,7 @@ import { HttpClient } from "../core/http.js";
 import { WalletAuth, type WalletAdapter } from "../core/auth.js";
 import { RewardzApiError } from "../core/errors.js";
 import { TweetClient } from "../integrations/tweets.js";
+import { LeaderboardClient } from "./leaderboards.js";
 import {
   API_INTENTS_RESOLVE,
   API_COMPLETIONS_INIT,
@@ -117,6 +118,13 @@ export class RewardzClient {
    */
   public readonly tweets: TweetClient;
 
+  /**
+   * Leaderboard queries — season info, user rankings, protocol rankings,
+   * and individual rank lookups. Bound to this client's HttpClient so the
+   * same wallet auth headers are reused across leaderboard calls.
+   */
+  public readonly leaderboards: LeaderboardClient;
+
   constructor(config: RewardzClientConfig) {
     this.auth = new WalletAuth(config.wallet);
     this.rpcUrl = config.rpcUrl;
@@ -125,6 +133,7 @@ export class RewardzClient {
       timeoutMs: config.timeoutMs,
     });
     this.tweets = new TweetClient(this.http);
+    this.leaderboards = new LeaderboardClient(this.http);
   }
 
   /* ── Auth ─────────────────────────────────────────────────────────────── */
