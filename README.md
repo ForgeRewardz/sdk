@@ -44,7 +44,19 @@ Five lines covers the most common path: resolve an intent, start a completion, a
 
 ## Protocol Onboarding Flow
 
-Protocol partners authenticate with an API key and use `ProtocolAdapter`. The flow registers a manifest, creates a campaign, stakes RWD tokens on-chain, and starts issuing points.
+Protocol partners have two onboarding paths. Pick the one that matches what you have.
+
+### Default: IDL Upload (Hosted Blinks)
+
+If you have an **IDL file** (Codama or Anchor) and want Rewardz to host the Solana Actions endpoints for you, this is the default path. In under five minutes, you upload the IDL, pick an instruction, confirm how its inputs map into the blink (payer, fixed addresses, user-PDAs, ATAs, user-input scalars), and publish — Rewardz returns a hosted action URL that you drop straight into a campaign. No Solana Actions server to build or host.
+
+Full spec and admin walkthrough: [`mobileSpecs/TODO-0015-protocol-console.md` §15G](../TODO-0015-protocol-console.md#15g-idl-upload--hosted-blink-generation-priority-1--default-onboarding).
+
+A thin CLI (`@rewardz/cli blink create <idl>`) that composes the same SDK primitives as the console wizard is tracked as future work in §15H of the same document.
+
+### Advanced: Manual Registration
+
+If you already host your own Solana Actions endpoints and ship a compliant `actions.json`, authenticate with an API key and use `ProtocolAdapter` directly. The manual flow registers a manifest, creates a campaign, stakes RWD tokens on-chain, and starts issuing points.
 
 ### 1. Register your protocol manifest
 
@@ -85,11 +97,7 @@ Use the generated instruction builder to create a `ProtocolStake` account and tr
 
 ```typescript
 import { createProtocolStakeInstruction } from "@rewardz/sdk/generated/instructions";
-import {
-  PublicKey,
-  Transaction,
-  sendAndConfirmTransaction,
-} from "@solana/kit";
+import { PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/kit";
 
 const ix = createProtocolStakeInstruction(
   {
@@ -302,7 +310,10 @@ Auth: wallet signing (WalletAuth) — signs a message on first call and caches h
 | `getClaimProof`         | `() => Promise<ClaimProofResponse>`                                                           | Get the Merkle proof needed to sync points on-chain                             |
 | `getRewardSummary`      | `() => Promise<{ balance, recentEvents }>`                                                    | Convenience: fetch balance + last 10 events in one call                         |
 
-`LeaderboardClient` is re-exported from `@rewardz/sdk/client`. Access it via the same import.
+`RewardzClient` also exposes two sub-clients as properties, both sharing the same `HttpClient` so wallet auth headers are reused:
+
+- `client.tweets` — see [Integration Modules → TweetClient](#tweetclient-user-facing-walletauth)
+- `client.leaderboards` — see [Leaderboards](#leaderboards)
 
 ---
 
@@ -330,17 +341,22 @@ Note: `getCampaignStats` exists on the interface but is not yet implemented on t
 
 ### LeaderboardClient
 
-Import: `import { LeaderboardClient } from "@rewardz/sdk/client"`
+Import: `import { LeaderboardClient } from "@rewardz/sdk/client"` (or access `client.leaderboards` on an existing `RewardzClient`).
 
 Operates on the `HttpClient` from `RewardzClient`. Wallet auth headers must be set before use.
 
-| Method                | Signature                                                       | Description                                 |
-| --------------------- | --------------------------------------------------------------- | ------------------------------------------- |
-| `getCurrentSeason`    | `() => Promise<SeasonResponse>`                                 | Get the current active season details       |
-| `getProtocolRankings` | `(seasonId?, pagination?) => Promise<ProtocolRankingsResponse>` | Paginated protocol leaderboard for a season |
-| `getUserRankings`     | `(seasonId?, pagination?) => Promise<UserRankingsResponse>`     | Paginated user leaderboard for a season     |
-| `getMyRank`           | `() => Promise<UserRank>`                                       | The connected user's current rank           |
-| `getProtocolRank`     | `(protocolId: string) => Promise<ProtocolRank>`                 | Rank entry for a specific protocol          |
+All methods that return ranking data use the TODO-0016 §16C response shape (`{ entries, total, seasonId }`) and pass bigint-valued fields through as **strings** — see the [Leaderboards](#leaderboards) section below for the full wire-format notes.
+
+| Method                | Signature                                                          | Description                                              |
+| --------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| `getCurrentSeason`    | `() => Promise<Season>`                                            | Get the current active season details                   |
+| `getProtocolRankings` | `(options?: LeaderboardQueryOptions) => Promise<ProtocolRankingsResponse>` | Paginated protocol leaderboard for a season              |
+| `getUserRankings`     | `(options?: LeaderboardQueryOptions) => Promise<UserRankingsResponse>`     | Paginated user leaderboard for a season                  |
+| `getMyRank`           | `(seasonId?: string) => Promise<UserRank>`                         | The connected user's rank (defaults to current season)   |
+| `getUserRank`         | `(wallet: string, seasonId?: string) => Promise<UserRank>`         | Rank entry for a specific wallet                         |
+| `getProtocolRank`     | `(protocolId: string, seasonId?: string) => Promise<ProtocolRank>` | Rank entry for a specific protocol                       |
+
+`LeaderboardQueryOptions` fields: `seasonId?: string`, `limit?: number`, `page?: number` (1-indexed).
 
 ---
 
@@ -606,6 +622,88 @@ const results = await awarder.awardBatch([
 const budget = await awarder.getBudget();
 console.log(`Remaining today: ${budget.remaining} / ${budget.daily_limit}`);
 ```
+
+---
+
+## Leaderboards
+
+The SDK exposes season-scoped user and protocol leaderboards via the `RewardzClient.leaderboards` property. It's bound to the same `HttpClient` as the parent client, so wallet auth headers are reused.
+
+```typescript
+import { RewardzClient } from "@rewardz/sdk/client";
+
+const client = new RewardzClient({
+  rpcUrl: "https://api.mainnet-beta.solana.com",
+  apiBaseUrl: "https://api.rewardz.xyz",
+  wallet: walletAdapter,
+});
+
+// Current season
+const season = await client.leaderboards.getCurrentSeason();
+// → { seasonId, name, description, startAt, endAt, status, snapshotTaken }
+
+// Top 10 protocols in the current season
+const { entries, total, seasonId } = await client.leaderboards.getProtocolRankings({
+  seasonId: season.seasonId,
+  limit: 10,
+  page: 1,
+});
+
+console.log(`Season ${seasonId} has ${total} ranked protocols`);
+console.log(entries[0].protocolName, "→", entries[0].totalPointsIssued);
+// entries[0].breakdown → { tweet: "0", api: "25000", webhook: "0", blink: "15000" }
+// entries[0].totalPointsIssued → "40000" (string, bigint wire format)
+
+// Where does my wallet rank this season?
+const myRank = await client.leaderboards.getMyRank(season.seasonId);
+console.log(`You are #${myRank.rank} with ${myRank.totalPoints} points`);
+```
+
+### Wire format for bigint fields
+
+`totalPoints`, `totalPointsIssued`, and every field in `PointsBreakdown` are serialised as **strings** on the wire because JSON cannot represent `bigint` natively. The client passes these through unchanged — it does NOT coerce them to `bigint`. Consumers that need arithmetic should coerce in-memory:
+
+```typescript
+const total = BigInt(entry.totalPointsIssued);
+const apiChannel = BigInt(entry.breakdown.api);
+const share = (apiChannel * 100n) / total;
+console.log(`API rewards are ${share}% of total`);
+```
+
+This keeps the SDK layer cheap and bit-for-bit faithful to the server response, and leaves the choice of numeric representation to the caller (who may prefer `bigint`, `BN.js`, or a decimal-point display string).
+
+### The 5→4 channel rollup
+
+The underlying on-chain point-events taxonomy has **five** channels:
+
+```
+api | webhook | blink | completion | tweet
+```
+
+The leaderboard surface exposes **four** — `completion` is folded into `blink` server-side before serialisation. The rationale: `completion` events are the on-chain acknowledgement of a preceding `blink` interaction, so splitting them would double-count the same user action in a user-facing rollup. If you need the raw five-way split, query the `point_events` table directly. See TODO-0016 §16C for the full spec.
+
+### Response shape
+
+```typescript
+interface ProtocolRankingsResponse {
+  entries: ProtocolRank[];
+  total: number; // full count for the season, not the page size
+  seasonId: string; // echoes the season the server actually queried
+}
+
+interface ProtocolRank {
+  protocolId: string;
+  protocolName: string;
+  protocolLogo: string | null;
+  rank: number;
+  totalPointsIssued: string; // bigint as string
+  breakdown: PointsBreakdown; // { tweet, api, webhook, blink } — all strings
+  uniqueUsersRewarded: number;
+  seasonId: string;
+}
+```
+
+`UserRankingsResponse` / `UserRank` mirror this shape with `totalPoints` (no "Issued" suffix) and user-specific fields.
 
 ---
 
