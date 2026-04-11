@@ -28,10 +28,11 @@ export type IdlKind = "codama" | "anchor" | "unknown";
  *
  * - Codama root nodes always have `{ kind: "rootNode", standard: "codama" }`
  *   at the top level.
- * - Anchor IDLs always have a top-level `version`, `name`, and
- *   `instructions` array. The v0.1.0 Anchor format also carries a
- *   `metadata` block; the newer v0.30+ format carries an
- *   `address` field. Both are matched as "anchor".
+ * - Anchor v0.1.0 IDLs have top-level `name`, `version`, and
+ *   `instructions[]`.
+ * - Anchor v0.30+ IDLs nest `name` and `version` under a `metadata`
+ *   block and typically carry a top-level `address` field. Both
+ *   shapes are matched as "anchor".
  * - Anything else is `unknown` and will cause `parseIdl` to throw.
  */
 export function detectIdlKind(raw: unknown): IdlKind {
@@ -40,13 +41,21 @@ export function detectIdlKind(raw: unknown): IdlKind {
   if (obj.kind === "rootNode" && obj.standard === "codama") {
     return "codama";
   }
-  // Anchor IDLs have a top-level instructions array plus either a
-  // `metadata` block (v0.1.0) or an `address` field (v0.30+) and at
-  // minimum a `name` and `version` string.
+  if (!Array.isArray(obj.instructions)) {
+    return "unknown";
+  }
+  // v0.1.0: top-level name + version.
+  if (typeof obj.name === "string" && typeof obj.version === "string") {
+    return "anchor";
+  }
+  // v0.30+: name + version live under `metadata`, often alongside a
+  // top-level `address` field.
+  const metadata = obj.metadata;
   if (
-    typeof obj.name === "string" &&
-    typeof obj.version === "string" &&
-    Array.isArray(obj.instructions)
+    metadata !== null &&
+    typeof metadata === "object" &&
+    typeof (metadata as Record<string, unknown>).name === "string" &&
+    typeof (metadata as Record<string, unknown>).version === "string"
   ) {
     return "anchor";
   }

@@ -55,10 +55,17 @@ for (let i = 0; i < BASE58_ALPHABET.length; i++) {
 /**
  * Decodes a base58 string into raw bytes. Throws on invalid characters.
  * Used for every pubkey argument in the seed system.
+ *
+ * Note: the big-integer accumulator starts as an EMPTY array, not
+ * `[0]`. Seeding with a zero byte would be double-counted against the
+ * leading-'1' zero-preservation loop — a 32-char string of '1's (e.g.
+ * the system program pubkey) would decode to 33 zero bytes instead of
+ * 32 because the initial accumulator zero is never overwritten when
+ * every input digit is 0.
  */
 export function base58Decode(source: string): Uint8Array {
   if (source.length === 0) return new Uint8Array();
-  const bytes: number[] = [0];
+  const bytes: number[] = [];
   for (let i = 0; i < source.length; i++) {
     const char = source[i] as string;
     const value = BASE58_LOOKUP[char];
@@ -86,10 +93,16 @@ export function base58Decode(source: string): Uint8Array {
 /**
  * Encodes raw bytes to base58. Used when the PDA derivation result
  * needs to be handed back as a standard Solana address string.
+ *
+ * Note: `digits` starts as an EMPTY array rather than `[0]`. Seeding
+ * with a zero digit would be double-counted against the leading-zero
+ * '1'-preservation loop — 32 zero bytes would encode to a 33-char '1'
+ * string because the initial zero digit contributes one extra trailing
+ * '1' that the decoder then interprets as a 33rd leading zero.
  */
 export function base58Encode(bytes: Uint8Array): string {
   if (bytes.length === 0) return "";
-  const digits: number[] = [0];
+  const digits: number[] = [];
   for (let i = 0; i < bytes.length; i++) {
     let carry = bytes[i] as number;
     for (let j = 0; j < digits.length; j++) {
