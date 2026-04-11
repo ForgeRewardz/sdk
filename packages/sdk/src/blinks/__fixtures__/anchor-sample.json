@@ -1,0 +1,26 @@
+{
+  "address": "11111111111111111111111111111111",
+  "metadata": {
+    "name": "anchor_sample",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Minimal Anchor IDL fixture for discriminator-kind coverage. The `transfer` instruction uses the real 8-byte sighash of 'global:transfer', so buildInstruction output must match exactly at data[0..8]. Single-arg u64 for encoding coverage."
+  },
+  "instructions": [
+    {
+      "name": "transfer",
+      "discriminator": [163, 52, 200, 231, 140, 3, 69, 186],
+      "accounts": [
+        { "name": "from", "writable": true, "signer": true },
+        { "name": "to", "writable": true, "signer": false },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [{ "name": "amount", "type": "u64" }]
+    }
+  ],
+  "accounts": [],
+  "types": []
+}
