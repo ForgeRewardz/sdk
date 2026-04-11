@@ -49,6 +49,11 @@
       "types": "./dist/generated/index.d.ts",
       "import": "./dist/generated/index.js",
       "require": "./dist/generated/index.cjs"
+    },
+    "./blinks": {
+      "types": "./dist/blinks/index.d.ts",
+      "import": "./dist/blinks/index.js",
+      "require": "./dist/blinks/index.cjs"
     }
   },
   "scripts": {
@@ -57,8 +62,12 @@
     "codama": "node codama.mjs"
   },
   "dependencies": {
+    "@codama/nodes-from-anchor": "1.4.0",
+    "@noble/curves": "2.0.1",
     "@rewardz/types": "workspace:*",
-    "@solana/kit": "^2.3.0"
+    "@solana/actions-spec": "2.4.2",
+    "@solana/kit": "^2.3.0",
+    "codama": "1.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
