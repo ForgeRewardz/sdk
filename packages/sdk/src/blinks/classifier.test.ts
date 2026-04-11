@@ -132,4 +132,17 @@ describe("classifyInstruction — error paths", () => {
       /not found/,
     );
   });
+
+  it("throws when hints alias two accounts to the payer bucket", () => {
+    // Regression test (Klaus R10 / code-reviewer I1 important finding):
+    // the multi-payer guard must count bucket === 'payer' regardless of
+    // whether the bucket came from heuristics or from an admin hint. A
+    // hint that forces two accounts to 'payer' would otherwise silently
+    // collapse them to the same pubkey in buildInstruction.
+    expect(() =>
+      classifyInstruction(root, "userStake", {
+        accounts: { config: "payer", stakeVault: "payer" },
+      }),
+    ).toThrow(/candidate payer accounts/);
+  });
 });

@@ -24,10 +24,7 @@ import type {
   TypeNode,
 } from "codama";
 import type { CodamaRootNode } from "./idl-normaliser.js";
-import type {
-  AccountBucket,
-  InstructionClassification,
-} from "./types.js";
+import type { AccountBucket, InstructionClassification } from "./types.js";
 
 /**
  * Admin-supplied overrides that win against any heuristic. Use this
@@ -179,9 +176,7 @@ function findInstruction(
   program: ProgramNode,
   instructionName: string,
 ): InstructionNode | null {
-  return (
-    program.instructions.find((ix) => ix.name === instructionName) ?? null
-  );
+  return program.instructions.find((ix) => ix.name === instructionName) ?? null;
 }
 
 /**
@@ -289,14 +284,19 @@ export function classifyInstruction(
     const override = hints?.accounts?.[name];
     const bucket = override ?? defaultAccountBucket(account);
     accounts[name] = bucket;
-    if (bucket === "payer" && override === undefined) {
+    // Count ALL payer-bucketed accounts, whether they came from heuristics
+    // or from an admin-supplied hint. The v1 spec guarantees exactly one
+    // signer per blink — a hint that aliases two accounts to `payer` would
+    // silently collapse them in buildInstruction, so the guardrail must
+    // enforce on final bucket counts not just heuristic-derived ones.
+    if (bucket === "payer") {
       payerCandidates.push(name);
     }
   }
 
   if (payerCandidates.length > 1) {
     throw new Error(
-      `classifyInstruction: instruction '${instructionName}' has ${payerCandidates.length} candidate payer accounts (${payerCandidates.join(", ")}); disambiguate via ClassificationHints.accounts`,
+      `classifyInstruction: instruction '${instructionName}' has ${payerCandidates.length} candidate payer accounts (${payerCandidates.join(", ")}); disambiguate via ClassificationHints.accounts (a single payer bucket is required even when supplied via hints)`,
     );
   }
 

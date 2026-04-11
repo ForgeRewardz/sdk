@@ -238,9 +238,15 @@ const PDA_MARKER_BYTES = new TextEncoder().encode("ProgramDerivedAddress");
 /**
  * Returns true if a 32-byte value decodes to a valid ed25519 curve
  * point — i.e. is a "regular" Solana keypair pubkey rather than a
- * program-derived address. We use `@noble/curves/ed25519`'s
- * `isValidPublicKey` so the check matches
- * `PublicKey.findProgramAddressSync`'s notion of "off curve".
+ * program-derived address.
+ *
+ * CRITICAL: we pass `zip215=false` to match Solana's runtime
+ * `PublicKey.findProgramAddressSync`, which uses strict RFC8032 /
+ * NIST186-5 decoding (via `ed25519.ExtendedPoint.fromHex`). The
+ * permissive ZIP215 decoder (`zip215=true`) accepts y values in
+ * [2^255-19, 2^255) and the x=0/x_0=1 edge case that the strict path
+ * rejects — a divergence that would ship blinks whose SDK-derived PDAs
+ * differ from the on-chain PDAs the program actually checks. Klaus R10.
  */
 function isOnCurve(bytes: Uint8Array): boolean {
   try {
@@ -248,7 +254,7 @@ function isOnCurve(bytes: Uint8Array): boolean {
     // throws for malformed length — we catch to report false in the
     // latter case because a malformed input is trivially "not on the
     // curve as a valid pubkey".
-    return ed25519.utils.isValidPublicKey(bytes, true);
+    return ed25519.utils.isValidPublicKey(bytes, false);
   } catch {
     return false;
   }
@@ -297,11 +303,7 @@ export function derivePda(
   const withBump = template.withBump !== false;
 
   if (!withBump) {
-    const candidate = sha256Bytes(
-      ...baseSeeds,
-      programBytes,
-      PDA_MARKER_BYTES,
-    );
+    const candidate = sha256Bytes(...baseSeeds, programBytes, PDA_MARKER_BYTES);
     if (isOnCurve(candidate)) {
       throw new Error(
         "derivePda: supplied seeds produced an on-curve address (withBump=false forbids bump search)",

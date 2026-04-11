@@ -57,7 +57,9 @@ function concat(...parts: Uint8Array[]): Uint8Array {
 
 function isOnCurve(bytes: Uint8Array): boolean {
   try {
-    return ed25519.utils.isValidPublicKey(bytes, true);
+    // zip215=false matches Solana's runtime strict RFC8032 decoder
+    // (see seeds.ts:isOnCurve for the full rationale — Klaus R10).
+    return ed25519.utils.isValidPublicKey(bytes, false);
   } catch {
     return false;
   }
@@ -329,9 +331,7 @@ export function buildInstruction(args: BuildInstructionArgs): BuiltInstruction {
   const keys: BuiltInstruction["keys"] = manifest.accountOrder.map((name) => {
     const pubkey = resolved[name];
     if (pubkey === undefined) {
-      throw new Error(
-        `buildInstruction: failed to resolve account '${name}'`,
-      );
+      throw new Error(`buildInstruction: failed to resolve account '${name}'`);
     }
     const flags = manifest.accountFlags[name];
     if (flags === undefined) {
