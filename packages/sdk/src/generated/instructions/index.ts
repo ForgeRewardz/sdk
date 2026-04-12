@@ -7,20 +7,24 @@
  */
 
 export * from "./acceptRental";
-export * from "./burnToMint";
-export * from "./claimMint";
+export * from "./claimRoundReward";
 export * from "./closeRental";
 export * from "./createRental";
+export * from "./deployToRound";
 export * from "./initializeConfig";
+export * from "./initializeGame";
 export * from "./protocolAddStake";
 export * from "./protocolStake";
 export * from "./protocolUnstake";
 export * from "./setAdmin";
+export * from "./setGameConfig";
 export * from "./setMinStakes";
 export * from "./setMintDifficulty";
 export * from "./setOpsAuthority";
 export * from "./setPointRoot";
 export * from "./settleRental";
+export * from "./settleRound";
+export * from "./startRound";
 export * from "./syncPoints";
 export * from "./userAddStake";
 export * from "./userStake";

@@ -33,7 +33,7 @@ export class RewardzMvpCodamaBuilder {
     return this;
   }
 
-  /** Add PDA derivation nodes for all 6 REWARDZ MVP account types. */
+  /** Add PDA derivation nodes for staking, rental, points, and mining game accounts. */
   appendPdaDerivers(): this {
     this.codama = appendPdaDerivers(this.codama);
     return this;

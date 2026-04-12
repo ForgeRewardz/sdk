@@ -7,19 +7,13 @@
  */
 
 import {
-  getAddressEncoder,
   getProgramDerivedAddress,
   getUtf8Encoder,
   type Address,
   type ProgramDerivedAddress,
 } from "@solana/kit";
 
-export type ProtocolStakeSeeds = {
-  authority: Address;
-};
-
-export async function findProtocolStakePda(
-  seeds: ProtocolStakeSeeds,
+export async function findGameConfigPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
@@ -27,9 +21,6 @@ export async function findProtocolStakePda(
   } = config;
   return await getProgramDerivedAddress({
     programAddress,
-    seeds: [
-      getUtf8Encoder().encode("protocol_stake"),
-      getAddressEncoder().encode(seeds.authority),
-    ],
+    seeds: [getUtf8Encoder().encode("game_config")],
   });
 }

@@ -7,19 +7,21 @@
  */
 
 import {
-  getAddressEncoder,
+  fixEncoderSize,
+  getBytesEncoder,
   getProgramDerivedAddress,
   getUtf8Encoder,
   type Address,
   type ProgramDerivedAddress,
+  type ReadonlyUint8Array,
 } from "@solana/kit";
 
-export type ProtocolStakeSeeds = {
-  authority: Address;
+export type RoundVaultSeeds = {
+  roundIdBytes: ReadonlyUint8Array;
 };
 
-export async function findProtocolStakePda(
-  seeds: ProtocolStakeSeeds,
+export async function findRoundVaultPda(
+  seeds: RoundVaultSeeds,
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
@@ -28,8 +30,8 @@ export async function findProtocolStakePda(
   return await getProgramDerivedAddress({
     programAddress,
     seeds: [
-      getUtf8Encoder().encode("protocol_stake"),
-      getAddressEncoder().encode(seeds.authority),
+      getUtf8Encoder().encode("round_vault"),
+      fixEncoderSize(getBytesEncoder(), 8).encode(seeds.roundIdBytes),
     ],
   });
 }

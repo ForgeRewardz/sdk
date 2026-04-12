@@ -3,7 +3,7 @@
  *
  * Covers three fixture instructions:
  *   - rewardz-mvp userStake (Codama, PDA + ATA + fixed + user-input)
- *   - rewardz-mvp burnToMint (Codama, two user-pda accounts)
+ *   - rewardz-mvp deployToRound (Codama, user stake PDA + fixed round accounts)
  *   - anchor-sample transfer (Anchor → Codama, signer + defaults)
  */
 
@@ -57,29 +57,31 @@ describe("classifyInstruction — rewardz-mvp userStake", () => {
   });
 });
 
-describe("classifyInstruction — rewardz-mvp burnToMint", () => {
+describe("classifyInstruction — rewardz-mvp deployToRound", () => {
   const root = parseIdl(rewardzMvp);
-  const result = classifyInstruction(root, "burnToMint");
+  const result = classifyInstruction(root, "deployToRound");
 
   it("classifies user as payer", () => {
     expect(result.accounts.user).toBe("payer");
   });
 
-  it("classifies config as fixed", () => {
-    expect(result.accounts.config).toBe("fixed");
+  it("classifies gameConfig + gameRound as fixed", () => {
+    expect(result.accounts.gameConfig).toBe("fixed");
+    expect(result.accounts.gameRound).toBe("fixed");
   });
 
-  it("classifies userStake + mintAttempt as user-pda", () => {
+  it("classifies userStake as user-pda and playerDeployment as fixed", () => {
     expect(result.accounts.userStake).toBe("user-pda");
-    expect(result.accounts.mintAttempt).toBe("user-pda");
+    expect(result.accounts.playerDeployment).toBe("fixed");
   });
 
-  it("classifies systemProgram as fixed", () => {
+  it("classifies treasury + systemProgram as fixed", () => {
+    expect(result.accounts.treasury).toBe("fixed");
     expect(result.accounts.systemProgram).toBe("fixed");
   });
 
-  it("classifies the nonce arg as user-input", () => {
-    expect(result.args.nonce).toBe("user-input");
+  it("classifies the points arg as user-input", () => {
+    expect(result.args.points).toBe("user-input");
   });
 });
 

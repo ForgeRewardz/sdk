@@ -13,7 +13,7 @@
  *
  * Known-good byte sequences:
  *   - userStake(amount=1000n) → [5, 232, 3, 0, 0, 0, 0, 0, 0]
- *   - burnToMint(nonce=42n)   → [17, 42, 0, 0, 0, 0, 0, 0, 0]
+ *   - deployToRound(points=42n) → [20, 42, 0, 0, 0, 0, 0, 0, 0]
  *   - anchor transfer(amount=500n) →
  *       [163, 52, 200, 231, 140, 3, 69, 186, 244, 1, 0, 0, 0, 0, 0, 0]
  */
@@ -32,12 +32,16 @@ const PROTOCOL_ID = "00000000-0000-0000-0000-000000000001";
 const PAYER = "So11111111111111111111111111111111111111112";
 const CONFIG_PUBKEY = "ConfigA111111111111111111111111111111111111A";
 const STAKE_VAULT_PUBKEY = "VaultA111111111111111111111111111111111111AA";
+const GAME_ROUND_PUBKEY = "RoundA111111111111111111111111111111111111AA";
+const PLAYER_DEPLOYMENT_PUBKEY = "PDA1111111111111111111111111111111111111111";
+const GAME_TREASURY_PUBKEY = "Treasury111111111111111111111111111111111111";
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const REWARD_MINT = "RewardMint11111111111111111111111111111111AA";
+const REWARDZ_PROGRAM = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh";
 
 const USER_STAKE_PROFILE: ProgramProfile = {
-  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
+  programId: REWARDZ_PROGRAM,
   seeds: {
     userStake: {
       seeds: [
@@ -48,20 +52,13 @@ const USER_STAKE_PROFILE: ProgramProfile = {
   },
 };
 
-const BURN_TO_MINT_PROFILE: ProgramProfile = {
-  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
+const DEPLOY_TO_ROUND_PROFILE: ProgramProfile = {
+  programId: REWARDZ_PROGRAM,
   seeds: {
     userStake: {
       seeds: [
         { kind: "literal", value: "user_stake" },
         { kind: "payer" },
-      ],
-    },
-    mintAttempt: {
-      seeds: [
-        { kind: "literal", value: "mint_attempt" },
-        { kind: "payer" },
-        { kind: "scalar_arg", name: "nonce" },
       ],
     },
   },
@@ -93,9 +90,7 @@ describe("buildInstruction — rewardz-mvp userStake (Codama u8)", () => {
   });
 
   it("returns the program publicKey as programId", () => {
-    expect(built.programId).toBe(
-      "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
-    );
+    expect(built.programId).toBe(REWARDZ_PROGRAM);
   });
 
   it("keys[] follows the IDL account order", () => {
@@ -161,57 +156,63 @@ describe("buildInstruction — rewardz-mvp userStake (Codama u8)", () => {
   });
 });
 
-describe("buildInstruction — rewardz-mvp burnToMint (Codama u8)", () => {
+describe("buildInstruction — rewardz-mvp deployToRound (Codama u8)", () => {
   const root = parseIdl(rewardzMvp);
-  const classification = classifyInstruction(root, "burnToMint");
+  const classification = classifyInstruction(root, "deployToRound");
   const manifest = buildManifest({
     rootNode: root,
-    instructionName: "burnToMint",
+    instructionName: "deployToRound",
     protocolId: PROTOCOL_ID,
     classification,
     fixedAccounts: {
-      config: CONFIG_PUBKEY,
+      gameConfig: CONFIG_PUBKEY,
+      gameRound: GAME_ROUND_PUBKEY,
+      playerDeployment: PLAYER_DEPLOYMENT_PUBKEY,
+      treasury: GAME_TREASURY_PUBKEY,
       systemProgram: SYSTEM_PROGRAM,
     },
-    programProfile: BURN_TO_MINT_PROFILE,
-    verificationAdapter: "mint.steel.v1",
+    programProfile: DEPLOY_TO_ROUND_PROFILE,
+    verificationAdapter: "mining.game.v1",
   });
 
   const built = buildInstruction({
     manifest,
-    params: { nonce: "42" },
+    params: { points: "42" },
     payer: PAYER,
   });
 
-  it("emits discriminator byte 17 at data[0]", () => {
-    expect(built.data[0]).toBe(17);
+  it("emits discriminator byte 20 at data[0]", () => {
+    expect(built.data[0]).toBe(20);
   });
 
-  it("emits nonce=42 as little-endian u64 at data[1..9]", () => {
+  it("emits points=42 as little-endian u64 at data[1..9]", () => {
     expect([...built.data.slice(1, 9)]).toEqual([42, 0, 0, 0, 0, 0, 0, 0]);
   });
 
-  it("has 5 accounts in IDL order", () => {
-    expect(built.keys).toHaveLength(5);
+  it("has 7 accounts in IDL order", () => {
+    expect(built.keys).toHaveLength(7);
     expect(built.keys[0]?.pubkey).toBe(PAYER);
     expect(built.keys[1]?.pubkey).toBe(CONFIG_PUBKEY);
-    // Positions 2 and 3 are PDAs (userStake, mintAttempt).
-    expect(built.keys[2]?.pubkey).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+    expect(built.keys[2]?.pubkey).toBe(GAME_ROUND_PUBKEY);
+    // Position 3 is the per-user staking PDA. Position 4 is the fixed
+    // deployment PDA supplied by the API because its seed includes the
+    // current round id, which is not part of the instruction args.
     expect(built.keys[3]?.pubkey).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
-    expect(built.keys[2]?.pubkey).not.toBe(built.keys[3]?.pubkey);
-    expect(built.keys[4]?.pubkey).toBe(SYSTEM_PROGRAM);
+    expect(built.keys[3]?.pubkey).not.toBe(PAYER);
+    expect(built.keys[4]?.pubkey).toBe(PLAYER_DEPLOYMENT_PUBKEY);
+    expect(built.keys[5]?.pubkey).toBe(GAME_TREASURY_PUBKEY);
+    expect(built.keys[6]?.pubkey).toBe(SYSTEM_PROGRAM);
   });
 
-  it("produces different userStake/mintAttempt PDAs for different nonces (because mintAttempt uses the scalar_arg seed)", () => {
+  it("keeps account addresses stable when only points changes", () => {
     const otherBuilt = buildInstruction({
       manifest,
-      params: { nonce: "99" },
+      params: { points: "99" },
       payer: PAYER,
     });
-    // userStake has no scalar_arg seed → same across both calls.
-    expect(otherBuilt.keys[2]?.pubkey).toBe(built.keys[2]?.pubkey);
-    // mintAttempt does use nonce in its seeds → must differ.
-    expect(otherBuilt.keys[3]?.pubkey).not.toBe(built.keys[3]?.pubkey);
+    expect(otherBuilt.keys.map((k) => k.pubkey)).toEqual(
+      built.keys.map((k) => k.pubkey),
+    );
   });
 });
 

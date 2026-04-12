@@ -17,39 +17,47 @@ import {
 } from "@solana/kit";
 import {
   parseAcceptRentalInstruction,
-  parseBurnToMintInstruction,
-  parseClaimMintInstruction,
+  parseClaimRoundRewardInstruction,
   parseCloseRentalInstruction,
   parseCreateRentalInstruction,
+  parseDeployToRoundInstruction,
   parseInitializeConfigInstruction,
+  parseInitializeGameInstruction,
   parseProtocolAddStakeInstruction,
   parseProtocolStakeInstruction,
   parseProtocolUnstakeInstruction,
   parseSetAdminInstruction,
+  parseSetGameConfigInstruction,
   parseSetMinStakesInstruction,
   parseSetMintDifficultyInstruction,
   parseSetOpsAuthorityInstruction,
   parseSetPointRootInstruction,
   parseSettleRentalInstruction,
+  parseSettleRoundInstruction,
+  parseStartRoundInstruction,
   parseSyncPointsInstruction,
   parseUserAddStakeInstruction,
   parseUserStakeInstruction,
   parseUserUnstakeInstruction,
   type ParsedAcceptRentalInstruction,
-  type ParsedBurnToMintInstruction,
-  type ParsedClaimMintInstruction,
+  type ParsedClaimRoundRewardInstruction,
   type ParsedCloseRentalInstruction,
   type ParsedCreateRentalInstruction,
+  type ParsedDeployToRoundInstruction,
   type ParsedInitializeConfigInstruction,
+  type ParsedInitializeGameInstruction,
   type ParsedProtocolAddStakeInstruction,
   type ParsedProtocolStakeInstruction,
   type ParsedProtocolUnstakeInstruction,
   type ParsedSetAdminInstruction,
+  type ParsedSetGameConfigInstruction,
   type ParsedSetMinStakesInstruction,
   type ParsedSetMintDifficultyInstruction,
   type ParsedSetOpsAuthorityInstruction,
   type ParsedSetPointRootInstruction,
   type ParsedSettleRentalInstruction,
+  type ParsedSettleRoundInstruction,
+  type ParsedStartRoundInstruction,
   type ParsedSyncPointsInstruction,
   type ParsedUserAddStakeInstruction,
   type ParsedUserStakeInstruction,
@@ -57,11 +65,13 @@ import {
 } from "../instructions";
 
 export const REWARDZ_MVP_PROGRAM_ADDRESS =
-  "RewardzMVP11111111111111111111111111111111111" as Address<"RewardzMVP11111111111111111111111111111111111">;
+  "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh" as Address<"mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh">;
 
 export enum RewardzMvpAccount {
   GlobalConfig,
-  MintAttempt,
+  GameConfig,
+  GameRound,
+  PlayerDeployment,
   PointRoot,
   ProtocolStake,
   RentalAgreement,
@@ -86,8 +96,12 @@ export enum RewardzMvpInstruction {
   CloseRental,
   SetPointRoot,
   SyncPoints,
-  BurnToMint,
-  ClaimMint,
+  StartRound,
+  DeployToRound,
+  SettleRound,
+  ClaimRoundReward,
+  SetGameConfig,
+  InitializeGame,
 }
 
 export function identifyRewardzMvpInstruction(
@@ -145,11 +159,23 @@ export function identifyRewardzMvpInstruction(
   if (containsBytes(data, getU8Encoder().encode(16), 0)) {
     return RewardzMvpInstruction.SyncPoints;
   }
-  if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return RewardzMvpInstruction.BurnToMint;
+  if (containsBytes(data, getU8Encoder().encode(19), 0)) {
+    return RewardzMvpInstruction.StartRound;
   }
-  if (containsBytes(data, getU8Encoder().encode(18), 0)) {
-    return RewardzMvpInstruction.ClaimMint;
+  if (containsBytes(data, getU8Encoder().encode(20), 0)) {
+    return RewardzMvpInstruction.DeployToRound;
+  }
+  if (containsBytes(data, getU8Encoder().encode(21), 0)) {
+    return RewardzMvpInstruction.SettleRound;
+  }
+  if (containsBytes(data, getU8Encoder().encode(22), 0)) {
+    return RewardzMvpInstruction.ClaimRoundReward;
+  }
+  if (containsBytes(data, getU8Encoder().encode(23), 0)) {
+    return RewardzMvpInstruction.SetGameConfig;
+  }
+  if (containsBytes(data, getU8Encoder().encode(24), 0)) {
+    return RewardzMvpInstruction.InitializeGame;
   }
   throw new Error(
     "The provided instruction could not be identified as a rewardzMvp instruction.",
@@ -157,7 +183,7 @@ export function identifyRewardzMvpInstruction(
 }
 
 export type ParsedRewardzMvpInstruction<
-  TProgram extends string = "RewardzMVP11111111111111111111111111111111111",
+  TProgram extends string = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh",
 > =
   | ({
       instructionType: RewardzMvpInstruction.InitializeConfig;
@@ -211,11 +237,23 @@ export type ParsedRewardzMvpInstruction<
       instructionType: RewardzMvpInstruction.SyncPoints;
     } & ParsedSyncPointsInstruction<TProgram>)
   | ({
-      instructionType: RewardzMvpInstruction.BurnToMint;
-    } & ParsedBurnToMintInstruction<TProgram>)
+      instructionType: RewardzMvpInstruction.StartRound;
+    } & ParsedStartRoundInstruction<TProgram>)
   | ({
-      instructionType: RewardzMvpInstruction.ClaimMint;
-    } & ParsedClaimMintInstruction<TProgram>);
+      instructionType: RewardzMvpInstruction.DeployToRound;
+    } & ParsedDeployToRoundInstruction<TProgram>)
+  | ({
+      instructionType: RewardzMvpInstruction.SettleRound;
+    } & ParsedSettleRoundInstruction<TProgram>)
+  | ({
+      instructionType: RewardzMvpInstruction.ClaimRoundReward;
+    } & ParsedClaimRoundRewardInstruction<TProgram>)
+  | ({
+      instructionType: RewardzMvpInstruction.SetGameConfig;
+    } & ParsedSetGameConfigInstruction<TProgram>)
+  | ({
+      instructionType: RewardzMvpInstruction.InitializeGame;
+    } & ParsedInitializeGameInstruction<TProgram>);
 
 export function parseRewardzMvpInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -341,18 +379,46 @@ export function parseRewardzMvpInstruction<TProgram extends string>(
         ...parseSyncPointsInstruction(instruction),
       };
     }
-    case RewardzMvpInstruction.BurnToMint: {
+    case RewardzMvpInstruction.StartRound: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: RewardzMvpInstruction.BurnToMint,
-        ...parseBurnToMintInstruction(instruction),
+        instructionType: RewardzMvpInstruction.StartRound,
+        ...parseStartRoundInstruction(instruction),
       };
     }
-    case RewardzMvpInstruction.ClaimMint: {
+    case RewardzMvpInstruction.DeployToRound: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: RewardzMvpInstruction.ClaimMint,
-        ...parseClaimMintInstruction(instruction),
+        instructionType: RewardzMvpInstruction.DeployToRound,
+        ...parseDeployToRoundInstruction(instruction),
+      };
+    }
+    case RewardzMvpInstruction.SettleRound: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: RewardzMvpInstruction.SettleRound,
+        ...parseSettleRoundInstruction(instruction),
+      };
+    }
+    case RewardzMvpInstruction.ClaimRoundReward: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: RewardzMvpInstruction.ClaimRoundReward,
+        ...parseClaimRoundRewardInstruction(instruction),
+      };
+    }
+    case RewardzMvpInstruction.SetGameConfig: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: RewardzMvpInstruction.SetGameConfig,
+        ...parseSetGameConfigInstruction(instruction),
+      };
+    }
+    case RewardzMvpInstruction.InitializeGame: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: RewardzMvpInstruction.InitializeGame,
+        ...parseInitializeGameInstruction(instruction),
       };
     }
     default:

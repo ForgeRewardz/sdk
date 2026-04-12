@@ -25,12 +25,16 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
-  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
+  type WritableSignerAccount,
 } from "@solana/kit";
-import { findGlobalConfigPda, findUserStakePda } from "../pdas";
+import {
+  findGameConfigPda,
+  findGameTreasuryPda,
+  findUserStakePda,
+} from "../pdas";
 import { REWARDZ_MVP_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
@@ -38,18 +42,20 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const BURN_TO_MINT_DISCRIMINATOR = 17;
+export const DEPLOY_TO_ROUND_DISCRIMINATOR = 20;
 
-export function getBurnToMintDiscriminatorBytes() {
-  return getU8Encoder().encode(BURN_TO_MINT_DISCRIMINATOR);
+export function getDeployToRoundDiscriminatorBytes() {
+  return getU8Encoder().encode(DEPLOY_TO_ROUND_DISCRIMINATOR);
 }
 
-export type BurnToMintInstruction<
+export type DeployToRoundInstruction<
   TProgram extends string = typeof REWARDZ_MVP_PROGRAM_ADDRESS,
   TAccountUser extends string | AccountMeta<string> = string,
-  TAccountConfig extends string | AccountMeta<string> = string,
+  TAccountGameConfig extends string | AccountMeta<string> = string,
+  TAccountGameRound extends string | AccountMeta<string> = string,
   TAccountUserStake extends string | AccountMeta<string> = string,
-  TAccountMintAttempt extends string | AccountMeta<string> = string,
+  TAccountPlayerDeployment extends string | AccountMeta<string> = string,
+  TAccountTreasury extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -58,17 +64,23 @@ export type BurnToMintInstruction<
   InstructionWithAccounts<
     [
       TAccountUser extends string
-        ? ReadonlySignerAccount<TAccountUser> & AccountSignerMeta<TAccountUser>
+        ? WritableSignerAccount<TAccountUser> & AccountSignerMeta<TAccountUser>
         : TAccountUser,
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
+      TAccountGameConfig extends string
+        ? WritableAccount<TAccountGameConfig>
+        : TAccountGameConfig,
+      TAccountGameRound extends string
+        ? WritableAccount<TAccountGameRound>
+        : TAccountGameRound,
       TAccountUserStake extends string
         ? WritableAccount<TAccountUserStake>
         : TAccountUserStake,
-      TAccountMintAttempt extends string
-        ? WritableAccount<TAccountMintAttempt>
-        : TAccountMintAttempt,
+      TAccountPlayerDeployment extends string
+        ? WritableAccount<TAccountPlayerDeployment>
+        : TAccountPlayerDeployment,
+      TAccountTreasury extends string
+        ? WritableAccount<TAccountTreasury>
+        : TAccountTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -76,78 +88,88 @@ export type BurnToMintInstruction<
     ]
   >;
 
-export type BurnToMintInstructionData = {
+export type DeployToRoundInstructionData = {
   discriminator: number;
-  nonce: bigint;
+  points: bigint;
 };
 
-export type BurnToMintInstructionDataArgs = { nonce: number | bigint };
+export type DeployToRoundInstructionDataArgs = { points: number | bigint };
 
-export function getBurnToMintInstructionDataEncoder(): FixedSizeEncoder<BurnToMintInstructionDataArgs> {
+export function getDeployToRoundInstructionDataEncoder(): FixedSizeEncoder<DeployToRoundInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", getU8Encoder()],
-      ["nonce", getU64Encoder()],
+      ["points", getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: BURN_TO_MINT_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: DEPLOY_TO_ROUND_DISCRIMINATOR }),
   );
 }
 
-export function getBurnToMintInstructionDataDecoder(): FixedSizeDecoder<BurnToMintInstructionData> {
+export function getDeployToRoundInstructionDataDecoder(): FixedSizeDecoder<DeployToRoundInstructionData> {
   return getStructDecoder([
     ["discriminator", getU8Decoder()],
-    ["nonce", getU64Decoder()],
+    ["points", getU64Decoder()],
   ]);
 }
 
-export function getBurnToMintInstructionDataCodec(): FixedSizeCodec<
-  BurnToMintInstructionDataArgs,
-  BurnToMintInstructionData
+export function getDeployToRoundInstructionDataCodec(): FixedSizeCodec<
+  DeployToRoundInstructionDataArgs,
+  DeployToRoundInstructionData
 > {
   return combineCodec(
-    getBurnToMintInstructionDataEncoder(),
-    getBurnToMintInstructionDataDecoder(),
+    getDeployToRoundInstructionDataEncoder(),
+    getDeployToRoundInstructionDataDecoder(),
   );
 }
 
-export type BurnToMintAsyncInput<
+export type DeployToRoundAsyncInput<
   TAccountUser extends string = string,
-  TAccountConfig extends string = string,
+  TAccountGameConfig extends string = string,
+  TAccountGameRound extends string = string,
   TAccountUserStake extends string = string,
-  TAccountMintAttempt extends string = string,
+  TAccountPlayerDeployment extends string = string,
+  TAccountTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
-  config?: Address<TAccountConfig>;
+  gameConfig?: Address<TAccountGameConfig>;
+  gameRound: Address<TAccountGameRound>;
   userStake?: Address<TAccountUserStake>;
-  mintAttempt: Address<TAccountMintAttempt>;
+  playerDeployment: Address<TAccountPlayerDeployment>;
+  treasury?: Address<TAccountTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
-  nonce: BurnToMintInstructionDataArgs["nonce"];
+  points: DeployToRoundInstructionDataArgs["points"];
 };
 
-export async function getBurnToMintInstructionAsync<
+export async function getDeployToRoundInstructionAsync<
   TAccountUser extends string,
-  TAccountConfig extends string,
+  TAccountGameConfig extends string,
+  TAccountGameRound extends string,
   TAccountUserStake extends string,
-  TAccountMintAttempt extends string,
+  TAccountPlayerDeployment extends string,
+  TAccountTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof REWARDZ_MVP_PROGRAM_ADDRESS,
 >(
-  input: BurnToMintAsyncInput<
+  input: DeployToRoundAsyncInput<
     TAccountUser,
-    TAccountConfig,
+    TAccountGameConfig,
+    TAccountGameRound,
     TAccountUserStake,
-    TAccountMintAttempt,
+    TAccountPlayerDeployment,
+    TAccountTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  BurnToMintInstruction<
+  DeployToRoundInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountConfig,
+    TAccountGameConfig,
+    TAccountGameRound,
     TAccountUserStake,
-    TAccountMintAttempt,
+    TAccountPlayerDeployment,
+    TAccountTreasury,
     TAccountSystemProgram
   >
 > {
@@ -156,10 +178,15 @@ export async function getBurnToMintInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    user: { value: input.user ?? null, isWritable: false },
-    config: { value: input.config ?? null, isWritable: false },
+    user: { value: input.user ?? null, isWritable: true },
+    gameConfig: { value: input.gameConfig ?? null, isWritable: true },
+    gameRound: { value: input.gameRound ?? null, isWritable: true },
     userStake: { value: input.userStake ?? null, isWritable: true },
-    mintAttempt: { value: input.mintAttempt ?? null, isWritable: true },
+    playerDeployment: {
+      value: input.playerDeployment ?? null,
+      isWritable: true,
+    },
+    treasury: { value: input.treasury ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -171,13 +198,16 @@ export async function getBurnToMintInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.config.value) {
-    accounts.config.value = await findGlobalConfigPda();
+  if (!accounts.gameConfig.value) {
+    accounts.gameConfig.value = await findGameConfigPda();
   }
   if (!accounts.userStake.value) {
     accounts.userStake.value = await findUserStakePda({
       authority: expectAddress(accounts.user.value),
     });
+  }
+  if (!accounts.treasury.value) {
+    accounts.treasury.value = await findGameTreasuryPda();
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -188,62 +218,76 @@ export async function getBurnToMintInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.gameConfig),
+      getAccountMeta(accounts.gameRound),
       getAccountMeta(accounts.userStake),
-      getAccountMeta(accounts.mintAttempt),
+      getAccountMeta(accounts.playerDeployment),
+      getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getBurnToMintInstructionDataEncoder().encode(
-      args as BurnToMintInstructionDataArgs,
+    data: getDeployToRoundInstructionDataEncoder().encode(
+      args as DeployToRoundInstructionDataArgs,
     ),
     programAddress,
-  } as BurnToMintInstruction<
+  } as DeployToRoundInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountConfig,
+    TAccountGameConfig,
+    TAccountGameRound,
     TAccountUserStake,
-    TAccountMintAttempt,
+    TAccountPlayerDeployment,
+    TAccountTreasury,
     TAccountSystemProgram
   >);
 }
 
-export type BurnToMintInput<
+export type DeployToRoundInput<
   TAccountUser extends string = string,
-  TAccountConfig extends string = string,
+  TAccountGameConfig extends string = string,
+  TAccountGameRound extends string = string,
   TAccountUserStake extends string = string,
-  TAccountMintAttempt extends string = string,
+  TAccountPlayerDeployment extends string = string,
+  TAccountTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
-  config: Address<TAccountConfig>;
+  gameConfig: Address<TAccountGameConfig>;
+  gameRound: Address<TAccountGameRound>;
   userStake: Address<TAccountUserStake>;
-  mintAttempt: Address<TAccountMintAttempt>;
+  playerDeployment: Address<TAccountPlayerDeployment>;
+  treasury: Address<TAccountTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
-  nonce: BurnToMintInstructionDataArgs["nonce"];
+  points: DeployToRoundInstructionDataArgs["points"];
 };
 
-export function getBurnToMintInstruction<
+export function getDeployToRoundInstruction<
   TAccountUser extends string,
-  TAccountConfig extends string,
+  TAccountGameConfig extends string,
+  TAccountGameRound extends string,
   TAccountUserStake extends string,
-  TAccountMintAttempt extends string,
+  TAccountPlayerDeployment extends string,
+  TAccountTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof REWARDZ_MVP_PROGRAM_ADDRESS,
 >(
-  input: BurnToMintInput<
+  input: DeployToRoundInput<
     TAccountUser,
-    TAccountConfig,
+    TAccountGameConfig,
+    TAccountGameRound,
     TAccountUserStake,
-    TAccountMintAttempt,
+    TAccountPlayerDeployment,
+    TAccountTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): BurnToMintInstruction<
+): DeployToRoundInstruction<
   TProgramAddress,
   TAccountUser,
-  TAccountConfig,
+  TAccountGameConfig,
+  TAccountGameRound,
   TAccountUserStake,
-  TAccountMintAttempt,
+  TAccountPlayerDeployment,
+  TAccountTreasury,
   TAccountSystemProgram
 > {
   // Program address.
@@ -251,10 +295,15 @@ export function getBurnToMintInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    user: { value: input.user ?? null, isWritable: false },
-    config: { value: input.config ?? null, isWritable: false },
+    user: { value: input.user ?? null, isWritable: true },
+    gameConfig: { value: input.gameConfig ?? null, isWritable: true },
+    gameRound: { value: input.gameRound ?? null, isWritable: true },
     userStake: { value: input.userStake ?? null, isWritable: true },
-    mintAttempt: { value: input.mintAttempt ?? null, isWritable: true },
+    playerDeployment: {
+      value: input.playerDeployment ?? null,
+      isWritable: true,
+    },
+    treasury: { value: input.treasury ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -275,49 +324,55 @@ export function getBurnToMintInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.gameConfig),
+      getAccountMeta(accounts.gameRound),
       getAccountMeta(accounts.userStake),
-      getAccountMeta(accounts.mintAttempt),
+      getAccountMeta(accounts.playerDeployment),
+      getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getBurnToMintInstructionDataEncoder().encode(
-      args as BurnToMintInstructionDataArgs,
+    data: getDeployToRoundInstructionDataEncoder().encode(
+      args as DeployToRoundInstructionDataArgs,
     ),
     programAddress,
-  } as BurnToMintInstruction<
+  } as DeployToRoundInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountConfig,
+    TAccountGameConfig,
+    TAccountGameRound,
     TAccountUserStake,
-    TAccountMintAttempt,
+    TAccountPlayerDeployment,
+    TAccountTreasury,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedBurnToMintInstruction<
+export type ParsedDeployToRoundInstruction<
   TProgram extends string = typeof REWARDZ_MVP_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     user: TAccountMetas[0];
-    config: TAccountMetas[1];
-    userStake: TAccountMetas[2];
-    mintAttempt: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    gameConfig: TAccountMetas[1];
+    gameRound: TAccountMetas[2];
+    userStake: TAccountMetas[3];
+    playerDeployment: TAccountMetas[4];
+    treasury: TAccountMetas[5];
+    systemProgram: TAccountMetas[6];
   };
-  data: BurnToMintInstructionData;
+  data: DeployToRoundInstructionData;
 };
 
-export function parseBurnToMintInstruction<
+export function parseDeployToRoundInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedBurnToMintInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedDeployToRoundInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -331,11 +386,13 @@ export function parseBurnToMintInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       user: getNextAccount(),
-      config: getNextAccount(),
+      gameConfig: getNextAccount(),
+      gameRound: getNextAccount(),
       userStake: getNextAccount(),
-      mintAttempt: getNextAccount(),
+      playerDeployment: getNextAccount(),
+      treasury: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getBurnToMintInstructionDataDecoder().decode(instruction.data),
+    data: getDeployToRoundInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -20,10 +20,13 @@ import {
  *   protocolStake     → ["protocol_stake", authority]
  *   rentalAgreement   → ["rental", userAuthority, protocolAuthority]
  *   pointRoot         → ["point_root"]
- *   mintAttempt       → ["mint_attempt", authority, nonce_bytes]
+ *   gameConfig        → ["game_config"]
+ *   gameTreasury      → ["game_treasury"]
+ *   gameRound         → ["game_round", round_id_bytes]
+ *   playerDeployment  → ["deployment", round_id_bytes, authority]
+ *   roundVault        → ["round_vault", round_id_bytes]
  *
- * NOTE: mintAttempt nonce seed is a u64 serialised as 8 little-endian bytes.
- * Callers must pre-serialise the nonce before passing to findProgramAddress.
+ * NOTE: u64 PDA seeds are represented as 8 little-endian bytes.
  */
 export function appendPdaDerivers(codama: Codama): Codama {
   codama.update(
@@ -73,32 +76,6 @@ export function appendPdaDerivers(codama: Codama): Codama {
           ],
         },
 
-        // Per-attempt burn-to-mint record.
-        //
-        // ⚠️  FOOTGUN — nonce seed serialisation:
-        //
-        //   The `nonceBytes` seed is the u64 nonce encoded as 8 little-endian
-        //   bytes.  Codama types this as `fixedSizeTypeNode(bytesTypeNode(), 8)`
-        //   so the generated `findMintAttemptPda` expects a `Uint8Array` of
-        //   exactly 8 bytes — NOT a plain `bigint`.
-        //
-        //   You MUST serialise before calling:
-        //
-        //     import { getU64Encoder } from '@solana/kit';
-        //     const nonceBytes = getU64Encoder().encode(nonce);   // Uint8Array(8)
-        //     const [pda] = await findMintAttemptPda({ authority, nonceBytes });
-        //
-        //   Passing a raw number/bigint will cause `getProgramDerivedAddress`
-        //   to throw (wrong type) or silently use a different address.
-        {
-          name: 'mintAttempt',
-          seeds: [
-            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('mint_attempt')),
-            variablePdaSeedNode('authority', publicKeyTypeNode()),
-            variablePdaSeedNode('nonceBytes', fixedSizeTypeNode(bytesTypeNode(), 8)),
-          ],
-        },
-
         // Stake vault — single shared token account for all staked tokens.
         {
           name: 'stakeVault',
@@ -114,6 +91,50 @@ export function appendPdaDerivers(codama: Codama): Codama {
             constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('rental_escrow')),
             variablePdaSeedNode('userAuthority', publicKeyTypeNode()),
             variablePdaSeedNode('protocolAuthority', publicKeyTypeNode()),
+          ],
+        },
+
+        // Mining game singleton config.
+        {
+          name: 'gameConfig',
+          seeds: [
+            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('game_config')),
+          ],
+        },
+
+        // Mining game SOL treasury.
+        {
+          name: 'gameTreasury',
+          seeds: [
+            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('game_treasury')),
+          ],
+        },
+
+        // Per-round game state. `roundIdBytes` is u64 little-endian.
+        {
+          name: 'gameRound',
+          seeds: [
+            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('game_round')),
+            variablePdaSeedNode('roundIdBytes', fixedSizeTypeNode(bytesTypeNode(), 8)),
+          ],
+        },
+
+        // Per-round Token-2022 reward vault. `roundIdBytes` is u64 little-endian.
+        {
+          name: 'roundVault',
+          seeds: [
+            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('round_vault')),
+            variablePdaSeedNode('roundIdBytes', fixedSizeTypeNode(bytesTypeNode(), 8)),
+          ],
+        },
+
+        // Per-player deployment for a round. `roundIdBytes` is u64 little-endian.
+        {
+          name: 'playerDeployment',
+          seeds: [
+            constantPdaSeedNode(stringTypeNode('utf8'), stringValueNode('deployment')),
+            variablePdaSeedNode('roundIdBytes', fixedSizeTypeNode(bytesTypeNode(), 8)),
+            variablePdaSeedNode('authority', publicKeyTypeNode()),
           ],
         },
       ],

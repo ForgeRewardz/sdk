@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // @rewardz/types — On-chain Instruction Discriminators & Arg Types
 //
-// All 19 instructions (discriminator 0–18) from the rewardz-mvp IDL.
+// All game-enabled instructions from the rewardz-mvp IDL.
 // ---------------------------------------------------------------------------
 
 // ── Instruction discriminator constants ────────────────────────────────────
@@ -23,8 +23,12 @@ export const IX_SETTLE_RENTAL = 13 as const;
 export const IX_CLOSE_RENTAL = 14 as const;
 export const IX_SET_POINT_ROOT = 15 as const;
 export const IX_SYNC_POINTS = 16 as const;
-export const IX_BURN_TO_MINT = 17 as const;
-export const IX_CLAIM_MINT = 18 as const;
+export const IX_START_ROUND = 19 as const;
+export const IX_DEPLOY_TO_ROUND = 20 as const;
+export const IX_SETTLE_ROUND = 21 as const;
+export const IX_CLAIM_ROUND_REWARD = 22 as const;
+export const IX_SET_GAME_CONFIG = 23 as const;
+export const IX_INITIALIZE_GAME = 24 as const;
 
 // ── Instruction arg interfaces ─────────────────────────────────────────────
 
@@ -110,8 +114,24 @@ export interface SyncPointsArgs {
   receiptData?: SyncPointsReceiptData;
 }
 
-export interface BurnToMintArgs {
-  nonce: bigint;
+// StartRound — no args
+
+export interface DeployToRoundArgs {
+  points: bigint;
 }
 
-// ClaimMint — no args
+// SettleRound — no args
+// ClaimRoundReward — no args
+
+export interface SetGameConfigArgs {
+  gameFeeLamports: bigint;
+  hitRateBps: number;
+  tokensPerRound: bigint;
+  hitPoolBps: number;
+  motherlodeMinThreshold: bigint;
+  motherlodeProbabilityBps: number;
+  roundSlots: bigint;
+  intermissionSlots: bigint;
+}
+
+// InitializeGame — no args

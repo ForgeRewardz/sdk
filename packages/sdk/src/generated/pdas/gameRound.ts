@@ -8,7 +8,6 @@
 
 import {
   fixEncoderSize,
-  getAddressEncoder,
   getBytesEncoder,
   getProgramDerivedAddress,
   getUtf8Encoder,
@@ -17,24 +16,22 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 
-export type MintAttemptSeeds = {
-  authority: Address;
-  nonceBytes: ReadonlyUint8Array;
+export type GameRoundSeeds = {
+  roundIdBytes: ReadonlyUint8Array;
 };
 
-export async function findMintAttemptPda(
-  seeds: MintAttemptSeeds,
+export async function findGameRoundPda(
+  seeds: GameRoundSeeds,
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = "RewardzMVP11111111111111111111111111111111111" as Address<"RewardzMVP11111111111111111111111111111111111">,
+    programAddress = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh" as Address<"mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh">,
   } = config;
   return await getProgramDerivedAddress({
     programAddress,
     seeds: [
-      getUtf8Encoder().encode("mint_attempt"),
-      getAddressEncoder().encode(seeds.authority),
-      fixEncoderSize(getBytesEncoder(), 8).encode(seeds.nonceBytes),
+      getUtf8Encoder().encode("game_round"),
+      fixEncoderSize(getBytesEncoder(), 8).encode(seeds.roundIdBytes),
     ],
   });
 }

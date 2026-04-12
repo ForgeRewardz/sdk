@@ -91,3 +91,20 @@ export enum MarketingSpendType {
   Tokens = "tokens",
   SOL = "sol",
 }
+
+/** Mining game round lifecycle status */
+export enum GameRoundStatus {
+  Waiting = "waiting",
+  Active = "active",
+  Settling = "settling",
+  Settled = "settled",
+  Skipped = "skipped",
+}
+
+/** Player-facing result classification for a settled mining deployment */
+export enum MiningResultKind {
+  Pending = "pending",
+  Hit = "hit",
+  Miss = "miss",
+  Skipped = "skipped",
+}

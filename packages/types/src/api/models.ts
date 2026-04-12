@@ -14,6 +14,8 @@ import type {
   TweetSubmissionStatus,
   LeaderboardSnapshotType,
   MarketingSpendType,
+  GameRoundStatus,
+  MiningResultKind,
 } from "./enums.js";
 
 // ---------------------------------------------------------------------------
@@ -82,6 +84,54 @@ export interface PointEvent {
   source_reference: string | null;
   reason: string | null;
   created_at: Date;
+}
+
+/** Summary of the active or historical mining-game round. */
+export interface GameRoundSummary {
+  roundId: bigint;
+  status: GameRoundStatus;
+  startSlot: bigint;
+  endSlot: bigint;
+  estimatedEndsAt: Date | null;
+  playerCount: number;
+  gameFeeLamports: bigint;
+  hitRateBps: number;
+  tokensPerRound: bigint;
+  motherlodePool: bigint;
+  motherlodeMinThreshold: bigint;
+  motherlodeProbabilityBps: number;
+}
+
+/** Public player deployment state for one mining-game round. */
+export interface PlayerDeploymentStatus {
+  walletAddress: string;
+  roundId: bigint;
+  pointsDeployed: bigint | null;
+  feePaid: bigint | null;
+  deployedAt: Date | null;
+  result: MiningResultKind;
+  settled: boolean;
+  isHit: boolean | null;
+  rewardAmount: bigint;
+  motherlodeShare: bigint;
+  claimed: boolean;
+}
+
+/** Settled round result payload returned by game routes and bots. */
+export interface GameRoundResults {
+  round: GameRoundSummary;
+  hitCount: number;
+  totalHitPoints: bigint;
+  tokensMinted: bigint;
+  motherlodeTriggered: boolean;
+  motherlodeAmount: bigint;
+  player: PlayerDeploymentStatus | null;
+}
+
+/** Paginated mining-game round history response. */
+export interface GameRoundHistoryResponse {
+  entries: GameRoundSummary[];
+  total: number;
 }
 
 // ---------------------------------------------------------------------------

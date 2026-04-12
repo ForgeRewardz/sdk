@@ -6,11 +6,15 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./gameConfig";
+export * from "./gameRound";
+export * from "./gameTreasury";
 export * from "./globalConfig";
-export * from "./mintAttempt";
+export * from "./playerDeployment";
 export * from "./pointRoot";
 export * from "./protocolStake";
 export * from "./rentalAgreement";
 export * from "./rentalEscrow";
+export * from "./roundVault";
 export * from "./stakeVault";
 export * from "./userStake";

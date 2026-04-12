@@ -75,15 +75,14 @@ const ATA_NAME_HINTS = ["usertoken", "useraccount", "userata", "payertoken"];
 
 /**
  * Substrings whose presence implies the account is a per-user PDA
- * that needs a seed template (e.g. `userStake`, `mintAttempt`). These
- * are the accounts the admin must supply seeds for when filling in
- * the program profile.
+ * that needs a seed template (e.g. `userStake`). These are the
+ * accounts the admin must supply seeds for when filling in the
+ * program profile.
  */
 const PDA_NAME_HINTS = [
   "userstake",
   "userstate",
   "userrecord",
-  "mintattempt",
   "userposition",
   "userdata",
 ];

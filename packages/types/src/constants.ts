@@ -28,6 +28,13 @@ export const API_POINTS_CLAIM_PROOF = "/v1/points/claim-proof" as const;
 export const API_POINTS_AWARD = "/v1/points/award" as const;
 export const API_POINTS_AWARD_BATCH = "/v1/points/award/batch" as const;
 
+// Mining game
+export const API_GAME_ROUND_CURRENT = "/v1/game/round/current" as const;
+export const API_GAME_ROUND_STATUS = "/v1/game/round/:id/status" as const;
+export const API_GAME_ROUND_PLAYERS = "/v1/game/round/:id/players" as const;
+export const API_GAME_ROUND_RESULTS = "/v1/game/round/:id/results" as const;
+export const API_GAME_ROUND_HISTORY = "/v1/game/round/history" as const;
+
 // Protocols
 export const API_PROTOCOLS_REGISTER = "/v1/protocols/register" as const;
 export const API_PROTOCOLS = "/v1/protocols" as const;
@@ -146,9 +153,13 @@ export const SEED_USER_STAKE = "user_stake" as const;
 export const SEED_PROTOCOL_STAKE = "protocol_stake" as const;
 export const SEED_RENTAL = "rental" as const;
 export const SEED_POINT_ROOT = "point_root" as const;
-export const SEED_MINT_ATTEMPT = "mint_attempt" as const;
 export const SEED_STAKE_VAULT = "stake_vault" as const;
 export const SEED_RENTAL_ESCROW = "rental_escrow" as const;
+export const SEED_GAME_CONFIG = "game_config" as const;
+export const SEED_GAME_ROUND = "game_round" as const;
+export const SEED_PLAYER_DEPLOYMENT = "deployment" as const;
+export const SEED_GAME_TREASURY = "game_treasury" as const;
+export const SEED_ROUND_VAULT = "round_vault" as const;
 
 // ── Account Discriminators ─────────────────────────────────────────────────
 
@@ -157,7 +168,9 @@ export const DISC_USER_STAKE = 2 as const;
 export const DISC_PROTOCOL_STAKE = 3 as const;
 export const DISC_RENTAL_AGREEMENT = 4 as const;
 export const DISC_POINT_ROOT = 5 as const;
-export const DISC_MINT_ATTEMPT = 6 as const;
+export const DISC_GAME_CONFIG = 7 as const;
+export const DISC_GAME_ROUND = 8 as const;
+export const DISC_PLAYER_DEPLOYMENT = 9 as const;
 
 /** Account layout version */
 export const ACCOUNT_VERSION = 1 as const;
@@ -177,11 +190,35 @@ export const DEFAULT_RENTAL_FEE_BPS = 100;
 /** ~10% success rate (u64::MAX / 10) */
 export const DEFAULT_MINT_DIFFICULTY = 1_844_674_407_370_955_161n;
 
-/** 1000 points per burn-to-mint attempt */
+/** Legacy point spend threshold retained in GlobalConfig layout. */
 export const DEFAULT_MINT_COST_POINTS = 1_000n;
 
 /** 10,000 points = 1 Token X on success */
 export const POINTS_PER_TOKEN = 10_000n;
+
+/** Default SOL fee per mining-game deployment (0.006 SOL). */
+export const DEFAULT_GAME_FEE_LAMPORTS = 6_000_000n;
+
+/** Default per-deployment hit rate (50%). */
+export const DEFAULT_HIT_RATE_BPS = 5_000;
+
+/** Tokens minted into a settled round. */
+export const DEFAULT_TOKENS_PER_ROUND = 1_000n;
+
+/** Share of the token round reserved for hits. */
+export const DEFAULT_HIT_POOL_BPS = 8_000;
+
+/** Default motherlode trigger chance per settled round (1%). */
+export const DEFAULT_MOTHERLODE_PROBABILITY_BPS = 100;
+
+/** Default active deployment window in slots. */
+export const DEFAULT_ROUND_SLOTS = 150n;
+
+/** Default cooldown between settled and next round in slots. */
+export const DEFAULT_INTERMISSION_SLOTS = 35n;
+
+/** Minimum unique deployments before a round can distribute tokens. */
+export const MIN_GAME_PLAYERS = 2;
 
 /** Merkle proof max depth (supports 16M+ users) */
 export const MAX_PROOF_LEN = 24;

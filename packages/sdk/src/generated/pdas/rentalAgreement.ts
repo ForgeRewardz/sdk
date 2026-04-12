@@ -24,7 +24,7 @@ export async function findRentalAgreementPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = "RewardzMVP11111111111111111111111111111111111" as Address<"RewardzMVP11111111111111111111111111111111111">,
+    programAddress = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh" as Address<"mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh">,
   } = config;
   return await getProgramDerivedAddress({
     programAddress,

@@ -2,7 +2,7 @@
  * Tests for manifest.ts — the runtime-ready BlinkManifest builder.
  *
  * Dual-fixture discriminator coverage:
- *   - Codama u8 path  (userStake disc=5, burnToMint disc=17)
+ *   - Codama u8 path  (userStake disc=5, deployToRound disc=20)
  *   - Anchor sighash  (anchor-sample transfer — 8-byte bytesValueNode)
  *
  * Also asserts the fixedAccountsHash stability invariant: same
@@ -27,11 +27,15 @@ import anchorSample from "./__fixtures__/anchor-sample.json" with { type: "json"
 const PROTOCOL_ID = "00000000-0000-0000-0000-000000000001";
 const CONFIG_PUBKEY = "ConfigA111111111111111111111111111111111111A";
 const STAKE_VAULT_PUBKEY = "VaultA111111111111111111111111111111111111AA";
+const GAME_ROUND_PUBKEY = "RoundA111111111111111111111111111111111111AA";
+const PLAYER_DEPLOYMENT_PUBKEY = "PDA1111111111111111111111111111111111111111";
+const GAME_TREASURY_PUBKEY = "Treasury111111111111111111111111111111111111";
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const REWARDZ_PROGRAM = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh";
 
 const USER_STAKE_PROFILE: ProgramProfile = {
-  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
+  programId: REWARDZ_PROGRAM,
   seeds: {
     userStake: {
       seeds: [
@@ -42,20 +46,13 @@ const USER_STAKE_PROFILE: ProgramProfile = {
   },
 };
 
-const BURN_TO_MINT_PROFILE: ProgramProfile = {
-  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
+const DEPLOY_TO_ROUND_PROFILE: ProgramProfile = {
+  programId: REWARDZ_PROGRAM,
   seeds: {
     userStake: {
       seeds: [
         { kind: "literal", value: "user_stake" },
         { kind: "payer" },
-      ],
-    },
-    mintAttempt: {
-      seeds: [
-        { kind: "literal", value: "mint_attempt" },
-        { kind: "payer" },
-        { kind: "scalar_arg", name: "nonce" },
       ],
     },
   },
@@ -136,9 +133,7 @@ describe("buildManifest — rewardz-mvp userStake (Codama u8 discriminator)", ()
   });
 
   it("carries the program publicKey from the IDL", () => {
-    expect(manifest.programId).toBe(
-      "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
-    );
+    expect(manifest.programId).toBe(REWARDZ_PROGRAM);
   });
 
   it("kebab-cases the instruction slug", () => {
@@ -202,44 +197,50 @@ describe("buildManifest — rewardz-mvp userStake (Codama u8 discriminator)", ()
   });
 });
 
-describe("buildManifest — rewardz-mvp burnToMint", () => {
+describe("buildManifest — rewardz-mvp deployToRound", () => {
   const root = parseIdl(rewardzMvp);
-  const classification = classifyInstruction(root, "burnToMint");
+  const classification = classifyInstruction(root, "deployToRound");
   const manifest = buildManifest({
     rootNode: root,
-    instructionName: "burnToMint",
+    instructionName: "deployToRound",
     protocolId: PROTOCOL_ID,
     classification,
     fixedAccounts: {
-      config: CONFIG_PUBKEY,
+      gameConfig: CONFIG_PUBKEY,
+      gameRound: GAME_ROUND_PUBKEY,
+      playerDeployment: PLAYER_DEPLOYMENT_PUBKEY,
+      treasury: GAME_TREASURY_PUBKEY,
       systemProgram: SYSTEM_PROGRAM,
     },
-    programProfile: BURN_TO_MINT_PROFILE,
-    verificationAdapter: "mint.steel.v1",
+    programProfile: DEPLOY_TO_ROUND_PROFILE,
+    verificationAdapter: "mining.game.v1",
   });
 
-  it("emits discriminator byte 17 with kind='u8'", () => {
-    expect(manifest.discriminator).toEqual([17]);
+  it("emits discriminator byte 20 with kind='u8'", () => {
+    expect(manifest.discriminator).toEqual([20]);
     expect(manifest.discriminatorKind).toBe("u8");
   });
 
-  it("argLayout is [nonce: u64]", () => {
-    expect(manifest.argLayout).toEqual([{ name: "nonce", type: "u64" }]);
+  it("argLayout is [points: u64]", () => {
+    expect(manifest.argLayout).toEqual([{ name: "points", type: "u64" }]);
   });
 
   it("accountOrder matches the IDL", () => {
     expect(manifest.accountOrder).toEqual([
       "user",
-      "config",
+      "gameConfig",
+      "gameRound",
       "userStake",
-      "mintAttempt",
+      "playerDeployment",
+      "treasury",
       "systemProgram",
     ]);
   });
 
-  it("carries seed templates for BOTH user-pda accounts", () => {
+  it("carries the userStake seed template and keeps playerDeployment fixed", () => {
     expect(manifest.pdaSeeds.userStake).toBeDefined();
-    expect(manifest.pdaSeeds.mintAttempt).toBeDefined();
+    expect(manifest.pdaSeeds.playerDeployment).toBeUndefined();
+    expect(manifest.classification.accounts.playerDeployment).toBe("fixed");
   });
 });
 

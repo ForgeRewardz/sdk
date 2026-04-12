@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // @rewardz/types — On-chain Error Codes
 //
-// All 29 error variants from the rewardz-mvp IDL.
+// All 41 error variants from the rewardz-mvp IDL.
 // ---------------------------------------------------------------------------
 
 export enum RewardzError {
@@ -34,6 +34,18 @@ export enum RewardzError {
   InsufficientEscrow = 26,
   PointsAlreadySynced = 27,
   StakeAuthorityMismatch = 28,
+  RoundNotActive = 29,
+  RoundAlreadySettled = 30,
+  DeploymentWindowClosed = 31,
+  InsufficientPlayers = 32,
+  PlayerAlreadyDeployed = 33,
+  RoundNotSettled = 34,
+  NotAHit = 35,
+  RewardAlreadyClaimed = 36,
+  MotherlodeNotTriggered = 37,
+  InvalidSlotHashes = 38,
+  RoundNotEnded = 39,
+  InvalidBps = 40,
 }
 
 /** Human-readable error messages keyed by error code */
@@ -51,9 +63,9 @@ export const REWARDZ_ERROR_MESSAGES: Record<RewardzError, string> = {
   [RewardzError.ProofTooLong]: "Merkle proof too long",
   [RewardzError.ReceiptExpired]: "Receipt expired",
   [RewardzError.InvalidReceiptSigner]: "Invalid receipt signer",
-  [RewardzError.InsufficientPoints]: "Insufficient points for burn",
-  [RewardzError.AlreadyClaimed]: "Mint attempt already claimed",
-  [RewardzError.MintNotSuccessful]: "Mint attempt was not successful",
+  [RewardzError.InsufficientPoints]: "Insufficient points for deployment",
+  [RewardzError.AlreadyClaimed]: "Reward already claimed",
+  [RewardzError.MintNotSuccessful]: "Deployment did not produce a reward",
   [RewardzError.RentalNotActive]: "Rental not active",
   [RewardzError.InvalidRentalStatus]: "Invalid rental status",
   [RewardzError.InvalidPda]: "Invalid PDA seeds",
@@ -68,4 +80,17 @@ export const REWARDZ_ERROR_MESSAGES: Record<RewardzError, string> = {
   [RewardzError.PointsAlreadySynced]:
     "Points amount already synced (cannot go backwards)",
   [RewardzError.StakeAuthorityMismatch]: "Stake authority mismatch with rental",
+  [RewardzError.RoundNotActive]: "Round is not active",
+  [RewardzError.RoundAlreadySettled]: "Round already settled",
+  [RewardzError.DeploymentWindowClosed]: "Deployment window is closed",
+  [RewardzError.InsufficientPlayers]: "Round has too few players",
+  [RewardzError.PlayerAlreadyDeployed]: "Player already deployed to this round",
+  [RewardzError.RoundNotSettled]: "Round has not settled",
+  [RewardzError.NotAHit]: "Deployment was not a hit",
+  [RewardzError.RewardAlreadyClaimed]: "Round reward already claimed",
+  [RewardzError.MotherlodeNotTriggered]:
+    "Motherlode did not trigger for this round",
+  [RewardzError.InvalidSlotHashes]: "Invalid SlotHashes sysvar account",
+  [RewardzError.RoundNotEnded]: "Round has not ended",
+  [RewardzError.InvalidBps]: "Basis points must be between 0 and 10000",
 };

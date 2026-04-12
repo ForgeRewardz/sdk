@@ -40,10 +40,17 @@ export function updateInstructionBumps(codama: Codama): Codama {
         },
       },
 
-      // BurnToMint creates the mintAttempt PDA; no bump arg in data.
-      burnToMint: {
+      // DeployToRound creates the playerDeployment PDA; no bump arg in data.
+      deployToRound: {
         arguments: {
-          // nonce is a user-provided value, not a bump.
+          // points is user-provided, not a bump.
+        },
+      },
+
+      // StartRound creates the gameRound and roundVault PDAs; no bump args in data.
+      startRound: {
+        arguments: {
+          // Program derives round_id and bumps internally.
         },
       },
     }),

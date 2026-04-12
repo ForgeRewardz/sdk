@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // @rewardz/types — On-chain Account Interfaces
 //
-// TypeScript representations of the 6 on-chain accounts defined in the
+// TypeScript representations of the 8 on-chain accounts defined in the
 // rewardz-mvp IDL. Field names match the IDL exactly.
 //
 // Type mapping:
@@ -102,18 +102,68 @@ export interface PointRoot {
 }
 
 /**
- * MintAttempt — record of a single burn-to-mint attempt.
- * Seeds: ["mint_attempt", authority, nonce_le_bytes]
- * Discriminator: 6, Size: 106 bytes
+ * GameConfig — singleton mining-game config PDA.
+ * Seeds: ["game_config"]
+ * Discriminator: 7, Size: 193 bytes
  */
-export interface MintAttempt {
-  authority: string;
-  hash: Uint8Array;
-  pointsBurned: bigint;
-  nonce: bigint;
-  mintAmount: bigint;
-  createdAt: bigint;
-  success: boolean;
-  claimed: boolean;
+export interface GameConfig {
+  admin: string;
+  rewardMint: string;
+  treasury: string;
+  gameFeeLamports: bigint;
+  tokensPerRound: bigint;
+  motherlodePool: bigint;
+  motherlodeMinThreshold: bigint;
+  currentRoundId: bigint;
+  roundSlots: bigint;
+  intermissionSlots: bigint;
+  hitRateBps: number;
+  hitPoolBps: number;
+  motherlodeProbabilityBps: number;
   bump: number;
+  reserved: Uint8Array;
+}
+
+/**
+ * GameRound — on-chain settlement record for one mining-game round.
+ * Seeds: ["game_round", round_id_le_bytes]
+ * Discriminator: 8, Size: 168 bytes
+ */
+export interface GameRound {
+  roundId: bigint;
+  startSlot: bigint;
+  endSlot: bigint;
+  playerCount: number;
+  totalPointsDeployed: bigint;
+  totalFeeCollected: bigint;
+  settled: boolean;
+  settleSlotHash: Uint8Array;
+  hitCount: number;
+  totalHitPoints: bigint;
+  tokensMinted: bigint;
+  motherlodeTriggered: boolean;
+  motherlodeAmount: bigint;
+  rentPayer: string;
+  bump: number;
+  reserved: Uint8Array;
+}
+
+/**
+ * PlayerDeployment — record of a user's deployment into a game round.
+ * Seeds: ["deployment", round_id_le_bytes, authority]
+ * Discriminator: 9, Size: 93 bytes
+ */
+export interface PlayerDeployment {
+  authority: string;
+  roundId: bigint;
+  pointsDeployed: bigint;
+  feePaid: bigint;
+  deployedAt: bigint;
+  isHit: boolean;
+  rewardAmount: bigint;
+  motherlodeShare: bigint;
+  claimed: boolean;
+  settled: boolean;
+  bump: number;
+  reserved: Uint8Array;
 }

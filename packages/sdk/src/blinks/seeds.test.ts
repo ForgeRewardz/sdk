@@ -20,13 +20,13 @@ import {
 
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const PAYER = "So11111111111111111111111111111111111111112";
-const REWARDZ_PROGRAM = "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z";
+const REWARDZ_PROGRAM = "mineHEHyaVbQAkcPDDCuCSbkfGNid1RVz6GzcEgSVTh";
 
 const BASE_CTX: SeedContext = {
   payer: PAYER,
   accountRefs: { config: "ConfigA111111111111111111111111111111111111A" },
-  args: { amount: 1000n, nonce: 42n },
-  argTypes: { amount: "u64", nonce: "u64" },
+  args: { amount: 1000n, roundId: 42n },
+  argTypes: { amount: "u64", roundId: "u64" },
 };
 
 describe("base58 codec", () => {
@@ -190,9 +190,13 @@ describe("derivePda", () => {
   });
 
   it("rejects a program id that decodes to != 32 bytes", () => {
-    // 45 chars, valid base58, but decodes to 33 bytes — the old fixture that B1 caught.
+    // 45 chars, valid base58, but decodes to 45 bytes.
     expect(() =>
-      derivePda("RewardzMVP11111111111111111111111111111111111", template, BASE_CTX),
+      derivePda(
+        "111111111111111111111111111111111111111111111",
+        template,
+        BASE_CTX,
+      ),
     ).toThrow(/must decode to exactly 32 bytes/);
   });
 });
@@ -217,26 +221,26 @@ describe("derivePda — cross-validation against @solana/web3.js", () => {
     expect(result.bump).toBe(canonicalBump);
   });
 
-  it("scalar_arg (u64 nonce) seed matches PublicKey.findProgramAddressSync", () => {
+  it("scalar_arg (u64 roundId) seed matches PublicKey.findProgramAddressSync", () => {
     const ctx: SeedContext = {
       ...BASE_CTX,
-      args: { nonce: 42n },
-      argTypes: { nonce: "u64" },
+      args: { roundId: 42n },
+      argTypes: { roundId: "u64" },
     };
     const result = derivePda(REWARDZ_PROGRAM, {
       seeds: [
-        { kind: "literal", value: "mint_attempt" },
+        { kind: "literal", value: "deployment" },
+        { kind: "scalar_arg", name: "roundId" },
         { kind: "payer" },
-        { kind: "scalar_arg", name: "nonce" },
       ],
     }, ctx);
 
     const programKey = new PublicKey(REWARDZ_PROGRAM);
     const payerBytes = new PublicKey(PAYER).toBytes();
-    const nonceBytes = new Uint8Array(8);
-    new DataView(nonceBytes.buffer).setBigUint64(0, 42n, true);
+    const roundIdBytes = new Uint8Array(8);
+    new DataView(roundIdBytes.buffer).setBigUint64(0, 42n, true);
     const [canonical, canonicalBump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("mint_attempt", "utf8"), payerBytes, nonceBytes],
+      [Buffer.from("deployment", "utf8"), roundIdBytes, payerBytes],
       programKey,
     );
 
