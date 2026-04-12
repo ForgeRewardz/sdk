@@ -37,7 +37,7 @@ const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const REWARD_MINT = "RewardMint11111111111111111111111111111111AA";
 
 const USER_STAKE_PROFILE: ProgramProfile = {
-  programId: "RewardzMVP11111111111111111111111111111111111",
+  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
   seeds: {
     userStake: {
       seeds: [
@@ -49,7 +49,7 @@ const USER_STAKE_PROFILE: ProgramProfile = {
 };
 
 const BURN_TO_MINT_PROFILE: ProgramProfile = {
-  programId: "RewardzMVP11111111111111111111111111111111111",
+  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
   seeds: {
     userStake: {
       seeds: [
@@ -94,7 +94,7 @@ describe("buildInstruction — rewardz-mvp userStake (Codama u8)", () => {
 
   it("returns the program publicKey as programId", () => {
     expect(built.programId).toBe(
-      "RewardzMVP11111111111111111111111111111111111",
+      "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
     );
   });
 

@@ -76,6 +76,11 @@ function findProgramAddress(
   programIdBase58: string,
 ): { pda: string; bump: number } {
   const programBytes = base58Decode(programIdBase58);
+  if (programBytes.length !== 32) {
+    throw new Error(
+      `findProgramAddress: programId must decode to exactly 32 bytes, got ${programBytes.length}`,
+    );
+  }
   for (let bump = 255; bump >= 0; bump--) {
     const candidate = sha256(
       ...seeds,

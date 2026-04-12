@@ -1,16 +1,14 @@
 /**
  * Tests for seeds.ts — base58 codec + seed encoder + PDA derivation.
  *
- * PDA derivation is spot-checked for determinism and shape (base58,
- * bump in [0,255]) rather than against a hard-coded expected PDA.
- * Cross-validation against `PublicKey.findProgramAddressSync` would
- * require pulling in `@solana/web3.js` as a dev dep — kept out to
- * preserve the RPC-agnostic subpath. A determinism + shape test
- * catches the most likely bug class (non-determinism from a mutable
- * seed list or a missing bump loop exit).
+ * PDA derivation is spot-checked for determinism, shape (base58,
+ * bump in [0,255]), AND cross-validated against the canonical
+ * `PublicKey.findProgramAddressSync` from `@solana/web3.js` (which
+ * is a devDep only — the blinks runtime stays RPC-agnostic).
  */
 
 import { describe, it, expect } from "vitest";
+import { PublicKey } from "@solana/web3.js";
 
 import {
   base58Decode,
@@ -22,7 +20,7 @@ import {
 
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const PAYER = "So11111111111111111111111111111111111111112";
-const REWARDZ_PROGRAM = "RewardzMVP11111111111111111111111111111111111";
+const REWARDZ_PROGRAM = "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z";
 
 const BASE_CTX: SeedContext = {
   payer: PAYER,
@@ -189,5 +187,60 @@ describe("derivePda", () => {
     };
     const result = derivePda(REWARDZ_PROGRAM, withRef, BASE_CTX);
     expect(result.pda).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+  });
+
+  it("rejects a program id that decodes to != 32 bytes", () => {
+    // 45 chars, valid base58, but decodes to 33 bytes — the old fixture that B1 caught.
+    expect(() =>
+      derivePda("RewardzMVP11111111111111111111111111111111111", template, BASE_CTX),
+    ).toThrow(/must decode to exactly 32 bytes/);
+  });
+});
+
+describe("derivePda — cross-validation against @solana/web3.js", () => {
+  it("literal + payer seeds match PublicKey.findProgramAddressSync", () => {
+    const result = derivePda(REWARDZ_PROGRAM, {
+      seeds: [
+        { kind: "literal", value: "user_stake" },
+        { kind: "payer" },
+      ],
+    }, BASE_CTX);
+
+    const programKey = new PublicKey(REWARDZ_PROGRAM);
+    const payerBytes = new PublicKey(PAYER).toBytes();
+    const [canonical, canonicalBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("user_stake", "utf8"), payerBytes],
+      programKey,
+    );
+
+    expect(result.pda).toBe(canonical.toBase58());
+    expect(result.bump).toBe(canonicalBump);
+  });
+
+  it("scalar_arg (u64 nonce) seed matches PublicKey.findProgramAddressSync", () => {
+    const ctx: SeedContext = {
+      ...BASE_CTX,
+      args: { nonce: 42n },
+      argTypes: { nonce: "u64" },
+    };
+    const result = derivePda(REWARDZ_PROGRAM, {
+      seeds: [
+        { kind: "literal", value: "mint_attempt" },
+        { kind: "payer" },
+        { kind: "scalar_arg", name: "nonce" },
+      ],
+    }, ctx);
+
+    const programKey = new PublicKey(REWARDZ_PROGRAM);
+    const payerBytes = new PublicKey(PAYER).toBytes();
+    const nonceBytes = new Uint8Array(8);
+    new DataView(nonceBytes.buffer).setBigUint64(0, 42n, true);
+    const [canonical, canonicalBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("mint_attempt", "utf8"), payerBytes, nonceBytes],
+      programKey,
+    );
+
+    expect(result.pda).toBe(canonical.toBase58());
+    expect(result.bump).toBe(canonicalBump);
   });
 });

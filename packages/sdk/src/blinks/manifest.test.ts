@@ -31,7 +31,7 @@ const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 const USER_STAKE_PROFILE: ProgramProfile = {
-  programId: "RewardzMVP11111111111111111111111111111111111",
+  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
   seeds: {
     userStake: {
       seeds: [
@@ -43,7 +43,7 @@ const USER_STAKE_PROFILE: ProgramProfile = {
 };
 
 const BURN_TO_MINT_PROFILE: ProgramProfile = {
-  programId: "RewardzMVP11111111111111111111111111111111111",
+  programId: "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
   seeds: {
     userStake: {
       seeds: [
@@ -137,7 +137,7 @@ describe("buildManifest — rewardz-mvp userStake (Codama u8 discriminator)", ()
 
   it("carries the program publicKey from the IDL", () => {
     expect(manifest.programId).toBe(
-      "RewardzMVP11111111111111111111111111111111111",
+      "Fxe49DwqpdSRRpQpv7zm3QwtxaAYcbWurG6ntBZifb4Z",
     );
   });
 

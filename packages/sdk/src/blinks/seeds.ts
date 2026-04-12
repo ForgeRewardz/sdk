@@ -299,6 +299,11 @@ export function derivePda(
   context: SeedContext,
 ): { pda: string; bump: number } {
   const programBytes = base58Decode(programId);
+  if (programBytes.length !== 32) {
+    throw new Error(
+      `derivePda: programId must decode to exactly 32 bytes, got ${programBytes.length} (input: ${programId.length} chars)`,
+    );
+  }
   const baseSeeds = template.seeds.map((s) => encodeSeed(s, context));
   const withBump = template.withBump !== false;
 
